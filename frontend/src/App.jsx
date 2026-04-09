@@ -14,6 +14,10 @@ function App() {
   const [token, setToken] = useState(''); // Will be fetched from your backend
   const [wsUrl, setWsUrl] = useState(''); // E.g., wss://my-comms-coach.livekit.cloud
   const [selectedVoice, setSelectedVoice] = useState('Aoede'); // Default Gemini Voice
+  
+  // VAD Parameters
+  const [minSpeechDuration, setMinSpeechDuration] = useState(0.05);
+  const [minSilenceDuration, setMinSilenceDuration] = useState(0.55);
 
   // Toggle light/dark theme
   const toggleTheme = () => {
@@ -32,7 +36,7 @@ function App() {
       const backendUrl = import.meta.env.PROD 
         ? "https://my-comms-coach-backend-161209776732.us-central1.run.app"
         : "http://localhost:8000";
-      const resp = await fetch(`${backendUrl}/getToken?voice=${selectedVoice}`);
+      const resp = await fetch(`${backendUrl}/getToken?voice=${selectedVoice}&min_speech_duration=${minSpeechDuration}&min_silence_duration=${minSilenceDuration}`);
       if (!resp.ok) {
         throw new Error('Failed to fetch token from backend');
       }
@@ -113,6 +117,42 @@ function App() {
                   >
                     ▶ Play Sample
                   </button>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: "20px", width: "100%", maxWidth: "300px", padding: "16px", background: "rgba(255,255,255,0.05)", borderRadius: "8px" }}>
+                <h3 style={{ fontSize: "1rem", marginBottom: "12px", borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: "8px" }}>Tuning (VAD)</h3>
+                
+                <div style={{ marginBottom: "12px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <label style={{ fontSize: "0.85rem", color: "var(--text-secondary)", display: "flex", justifyContent: "space-between" }}>
+                    <span>Speech Threshold</span>
+                    <span>{minSpeechDuration}s</span>
+                  </label>
+                  <input 
+                    type="range" 
+                    min="0.01" 
+                    max="1.0" 
+                    step="0.01" 
+                    value={minSpeechDuration} 
+                    onChange={(e) => setMinSpeechDuration(parseFloat(e.target.value))}
+                    title="Minimum duration of speech to start a chunk"
+                  />
+                </div>
+                
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <label style={{ fontSize: "0.85rem", color: "var(--text-secondary)", display: "flex", justifyContent: "space-between" }}>
+                    <span>Silence Patience (Turn-Taking)</span>
+                    <span>{minSilenceDuration}s</span>
+                  </label>
+                  <input 
+                    type="range" 
+                    min="0.1" 
+                    max="2.0" 
+                    step="0.05" 
+                    value={minSilenceDuration} 
+                    onChange={(e) => setMinSilenceDuration(parseFloat(e.target.value))}
+                    title="How long to wait after you stop speaking before the AI responds"
+                  />
                 </div>
               </div>
 

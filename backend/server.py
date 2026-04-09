@@ -19,7 +19,7 @@ app.add_middleware(
 )
 
 @app.get("/getToken")
-async def get_token(room: str = "my-comms-room", participantName: str = "qa_user", voice: str = "Aoede"):
+async def get_token(room: str = "my-comms-room", participantName: str = "qa_user", voice: str = "Aoede", min_speech_duration: float = 0.05, min_silence_duration: float = 0.55):
     """
     Generate a secure LiveKit connection token for the frontend.
     """
@@ -27,7 +27,11 @@ async def get_token(room: str = "my-comms-room", participantName: str = "qa_user
         raise HTTPException(status_code=500, detail="LiveKit keys missing in environment")
 
     import json
-    metadata = json.dumps({"voice": voice})
+    metadata = json.dumps({
+        "voice": voice,
+        "min_speech_duration": min_speech_duration,
+        "min_silence_duration": min_silence_duration
+    })
 
     # Create the access token
     token = api.AccessToken(

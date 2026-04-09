@@ -33,8 +33,9 @@ server = AgentServer()
 # No agent_name = automatic dispatch (agent joins every room automatically)
 @server.rtc_session
 async def taylor_session(ctx: agents.JobContext):
-    # Parse requested voice from participant metadata
+    # Parse requested voice and VAD parameters from participant metadata
     chosen_voice = "Aoede"
+    vad_kwargs = {}
     import json
     for p in ctx.room.remote_participants.values():
         if p.metadata:
@@ -42,6 +43,10 @@ async def taylor_session(ctx: agents.JobContext):
                 meta = json.loads(p.metadata)
                 if "voice" in meta:
                     chosen_voice = meta["voice"]
+                if "min_speech_duration" in meta:
+                    vad_kwargs["min_speech_duration"] = float(meta["min_speech_duration"])
+                if "min_silence_duration" in meta:
+                    vad_kwargs["min_silence_duration"] = float(meta["min_silence_duration"])
             except Exception as e:
                 pass
 
@@ -50,7 +55,7 @@ async def taylor_session(ctx: agents.JobContext):
             model="gemini-2.5-flash-native-audio-latest",
             voice=chosen_voice,
         ),
-        vad=silero.VAD.load(),
+        vad=silero.VAD.load(**vad_kwargs),
     )
 
     await session.start(

@@ -13,6 +13,7 @@ function App() {
   const [sessionActive, setSessionActive] = useState(false);
   const [token, setToken] = useState(''); // Will be fetched from your backend
   const [wsUrl, setWsUrl] = useState(''); // E.g., wss://my-comms-coach.livekit.cloud
+  const [selectedVoice, setSelectedVoice] = useState('Aoede'); // Default Gemini Voice
 
   // Toggle light/dark theme
   const toggleTheme = () => {
@@ -27,12 +28,19 @@ function App() {
   }, []);
 
   const startSession = async () => {
-    // In the future, we'll fetch the token from your Python/FastAPI backend here.
-    // For now, we simulate starting the session.
-    alert("Connection to backend required to fetch token. Run python backend server first!");
-    // setToken("FETCHED_TOKEN");
-    // setWsUrl("wss://YOUR_PROJECT.livekit.cloud");
-    // setSessionActive(true);
+    try {
+      const resp = await fetch(`http://localhost:8000/getToken?voice=${selectedVoice}`);
+      if (!resp.ok) {
+        throw new Error('Failed to fetch token from backend');
+      }
+      const data = await resp.json();
+      setToken(data.accessToken);
+      setWsUrl(data.url);
+      setSessionActive(true);
+    } catch (err) {
+      console.error(err);
+      alert("Connection failed. Is the python server running on port 8000?");
+    }
   };
 
   const onDisconnected = () => {
@@ -55,9 +63,56 @@ function App() {
               <span className="status-badge disconnected">● Ready to Practice</span>
               <h1 className="title">Inspection Room</h1>
               <p className="subtitle">
-                Level 1: Warehouse Loading Dock.<br />
-                Your AI colleague, Lumina, is ready to chat.
+                Communication Scenario Practice.<br />
+                Your AI coach, Taylor, is ready to chat.
               </p>
+              
+              <div style={{ marginBottom: "20px", display: "flex", flexDirection: "column", gap: "8px", alignItems: "center" }}>
+                <label style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>Choose Taylor's Voice:</label>
+                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                  <select 
+                    value={selectedVoice} 
+                    onChange={(e) => setSelectedVoice(e.target.value)}
+                    style={{
+                      padding: "8px 16px",
+                      borderRadius: "8px",
+                      background: "rgba(255, 255, 255, 0.1)",
+                      color: "inherit",
+                      border: "1px solid rgba(255,255,255,0.2)",
+                      fontSize: "1rem",
+                      cursor: "pointer"
+                    }}
+                  >
+                    <option value="Aoede" style={{color: "black"}}>Professional Female</option>
+                    <option value="Charon" style={{color: "black"}}>Deep Male</option>
+                    <option value="Fenrir" style={{color: "black"}}>Casual Male</option>
+                    <option value="Kore" style={{color: "black"}}>Warm Female</option>
+                    <option value="Puck" style={{color: "black"}}>Energetic Male</option>
+                  </select>
+                  
+                  <button 
+                    onClick={() => {
+                      const audio = new Audio(`/voices/${selectedVoice}.wav`);
+                      audio.play().catch(e => console.error("Error playing audio", e));
+                    }}
+                    style={{
+                      background: "transparent",
+                      border: "1px solid var(--accent-color)",
+                      color: "var(--accent-color)",
+                      padding: "8px 16px",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      fontSize: "0.9rem",
+                      transition: "all 0.2s"
+                    }}
+                    onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(100, 108, 255, 0.1)'; }}
+                    onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                  >
+                    ▶ Play Sample
+                  </button>
+                </div>
+              </div>
+
               <button className="btn-primary" onClick={startSession}>
                 Start Session
               </button>
@@ -74,7 +129,7 @@ function App() {
               <RoomAudioRenderer />
               
               <span className="status-badge connected">● Active Session</span>
-              <h1 className="title">Chatting with Lumina...</h1>
+              <h1 className="title">Chatting with Taylor...</h1>
               
               <ActiveSessionView />
               

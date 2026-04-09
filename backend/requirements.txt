@@ -3,3 +3,4 @@ livekit-plugins-google
 firebase-admin
 fastapi
 uvicorn
+python-dotenv

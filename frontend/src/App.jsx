@@ -29,7 +29,10 @@ function App() {
 
   const startSession = async () => {
     try {
-      const resp = await fetch(`http://localhost:8000/getToken?voice=${selectedVoice}`);
+      const backendUrl = import.meta.env.PROD 
+        ? "https://my-comms-coach-backend-161209776732.us-central1.run.app"
+        : "http://localhost:8000";
+      const resp = await fetch(`${backendUrl}/getToken?voice=${selectedVoice}`);
       if (!resp.ok) {
         throw new Error('Failed to fetch token from backend');
       }

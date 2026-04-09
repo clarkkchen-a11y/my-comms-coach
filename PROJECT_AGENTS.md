@@ -12,3 +12,6 @@ The following skills have been evaluated against `~/.gemini/antigravity/skills/a
 ## Current Project Phase
 **Phase 1: Project Initiation and Tech Stack Discovery**
 Focusing on evaluating the foundational stack (Flutter, WebRTC/LiveKit, Python Backend) and validating orchestration logic.
+
+## Future Considerations / Technical Debt
+- **Self-Hosting LiveKit**: Investigate migrating from LiveKit Cloud free tier to a self-hosted Open Source LiveKit server to handle scale and reduce dependency on proprietary SaaS.

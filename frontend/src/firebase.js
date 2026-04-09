@@ -2,12 +2,12 @@ import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCfKzorL4O3cpPcmzsFDIBeefy_Ak17F30",
-  authDomain: "my-comms-coach.firebaseapp.com",
-  projectId: "my-comms-coach",
-  storageBucket: "my-comms-coach.firebasestorage.app",
-  messagingSenderId: "166125865385",
-  appId: "1:166125865385:web:7393835fcf9897f6401cb8"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 // Initialize Firebase

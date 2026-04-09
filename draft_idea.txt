@@ -1,0 +1,51 @@
+Project Name: My Comms Coach
+Target Persona: Non-native English speaker working as a Quality Assurance (QA) Officer in a Sydney-based furniture e-commerce business.
+Problem: The user needs to communicate technical quality issues (e.g., fabric durability, furniture assembly defects, shipping damage) to internal cross-functional teams like finance & customer care, local warehouse teams and international suppliers, while also mastering "Sydney workplace chitchat" to build rapport with internal teams. 
+Tech Stack Requirements:
+Frontend: Flutter 4.0. Needs a clean "Inspection Room" UI with a real-time waveform and a "Correction Overlay" that displays text-based feedback while the audio is live.
+Backend: Python + LiveKit Agents. This is the WebRTC bridge for sub-300ms latency.
+AI Brain: gemini-3.1-flash-live-preview. Use the A2A (Audio-to-Audio) pipeline.
+Orchestration: OpenClaw. Use OpenClaw to manage session state. Before a voice session starts, the app must call an OpenClaw "Skill" to fetch the "Daily QA Scenario."
+The Real-Time Adaptive Logic (System Instruction):
+"You are Lumina, a Senior QA Mentor in the Australian furniture industry.
+Self-Calibration: You must monitor the user's fluency and hesitation in real-time.
+If the user is struggling (high hesitation), drop to Level 1 (Confidence Mode): Focus on chitchat, give lots of 'verbal nods' (mm-hmm, I see), and don't correct grammar.
+If the user is fluent, shift to Level 4 (Professional Precision): Interrupt (barge-in) to suggest more technical vocabulary (e.g., instead of 'bad leather,' suggest 'grain inconsistency' or 'substandard tanning').
+Context: Use Sydney-specific terminology (e.g., 'The warehouse in Alexandria,' 'EOFY stocktake,' 'Delivery lead times')."
+Development Tasks:
+Set up a Flutter project that connects to the LiveKit Sandbox.
+Create an OpenClaw configuration file (agent.json) that stores the user's "Progress Level."
+Implement the google-genai Python SDK to handle the Gemini 3.1 Live stream.
+
+3. The OpenClaw "Skill" Prompt
+Paste this into your OpenClaw configuration. This makes OpenClaw the "Director" that prepares the AI for your specific work topics.
+Skill Name: QA_Scenario_Generator
+Role: You provide the "Technical Context" for the daily communication practice.
+Logic:
+Topic Selection: Choose from: 'Reporting a broken dining table shipment,' 'Explaining a complex assembly instruction to a customer,' or 'Small talk with the truck drivers at the loading dock.'
+Difficulty Setting: Check the local user_progress.db. If the user has completed 5 sessions, set the scenario to 'High-Stakes Dispute with a Supplier over Fabric Quality.'
+Injection: Pass this JSON object to the LiveKit Agent before the socket opens: { "current_scenario": "...", "target_vocabulary": ["fasteners", "upholstery", "clearance"], "initial_feedback_level": 2 }
+
+4. Progress-Based Modules (Furniture QA Specific)
+Here is how your app will structure the "Practice" sessions, starting easy and getting harder.
+Level
+Module Name
+Context
+Goal
+1
+The Loading Dock
+Chitchat with the warehouse manager.
+Build social confidence using "Aussie" greetings (e.g., "How's the morning been? Busy?").
+2
+The Visual Inspection
+Describing a scratch on a timber sideboard.
+Practice using descriptive adjectives (e.g., "scuffed," "dented," "varnish finish").
+3
+The Assembly Guide
+Explaining to a customer how to fix a wobbly chair leg.
+Clear, step-by-step instructional English without sounding frustrated.
+4
+The Supplier Push-back
+Telling a supplier that 10% of the sofas have 'stitching defects.'
+Diplomatic but firm technical English. Avoiding "Sorry" and using "We require."
+

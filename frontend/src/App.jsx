@@ -215,10 +215,10 @@ function App() {
                 {/* Response Patience */}
                 <div>
                   <label style={{ ...labelStyle, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    Response Speed
+                    Silence Patience (Turn-Taking)
                     <span className="tooltip-wrapper">
                       <span className="tooltip-icon">?</span>
-                      <span className="tooltip-bubble">Snappy = Taylor responds quickly. Patient = more pause time mid-thought.</span>
+                      <span className="tooltip-bubble">Snappy = Taylor interrupts quicker. Patient = Taylor gives you more time to think mid-sentence.</span>
                     </span>
                   </label>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "8px" }}>

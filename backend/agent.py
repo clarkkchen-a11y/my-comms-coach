@@ -9,6 +9,11 @@ from livekit.plugins import google
 from livekit.plugins.google.realtime.api_proto import types
 import firebase_admin
 from firebase_admin import credentials, firestore
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+logging.getLogger("livekit.plugins.google").setLevel(logging.DEBUG)
+logging.getLogger("livekit.agents").setLevel(logging.DEBUG)
 
 # ----- FIREBASE INIT -----
 cred = credentials.Certificate("my-comms-coach-firebase-adminsdk-fbsvc-5c191af4c1.json")

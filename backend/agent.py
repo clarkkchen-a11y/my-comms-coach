@@ -4,7 +4,7 @@ load_dotenv()
 
 import json
 from livekit import agents
-from livekit.agents import AgentServer, AgentSession, Agent, JobContext, JobRequest
+from livekit.agents import AgentServer, AgentSession, Agent
 from livekit.plugins import google
 from livekit.plugins.google.realtime.api_proto import types
 import firebase_admin
@@ -29,22 +29,16 @@ class Taylor(Agent):
         )
 
 
-async def auto_accept(request: JobRequest) -> None:
-    """Accept every incoming job automatically."""
-    await request.accept(name="Taylor", identity="taylor-agent")
-
-
 server = AgentServer()
 
 
-@server.rtc_session(on_request=auto_accept)
-async def taylor_session(ctx: JobContext):
+# No agent_name = automatic dispatch (agent joins every room automatically)
+@server.rtc_session
+async def taylor_session(ctx: agents.JobContext):
     # Parse voice and VAD settings from participant metadata
     chosen_voice = "Aoede"
     mic_sensitivity = "high"
     silence_duration_ms = 1000
-
-    await ctx.connect()
 
     for p in ctx.room.remote_participants.values():
         if p.metadata:

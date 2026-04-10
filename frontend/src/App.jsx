@@ -172,11 +172,6 @@ function App() {
                     </div>
                   )}
                 </div>
-                
-                <div style={{background: "var(--panel-bg)", padding: "12px", borderRadius: "8px", border: "1px solid var(--panel-border)"}}>
-                  <h3 style={{fontSize: "0.85rem", margin: "0 0 10px 0"}}>Past Session Feedback</h3>
-                  <SessionHistory user={user} />
-                </div>
               </div>
 
               <div style={{ marginBottom: "20px", display: "flex", flexDirection: "column", gap: "8px", alignItems: "center" }}>
@@ -287,7 +282,7 @@ function App() {
                 </div>
               </div>
 
-              <button className="btn-primary" onClick={startSession}>
+              <button className="btn-primary" style={{marginTop: '20px'}} onClick={startSession}>
                 Start Session
               </button>
             </div>
@@ -315,6 +310,16 @@ function App() {
             </LiveKitRoom>
           )}
         </div>
+
+        {!connected && token === "" && user && (
+          <div className="glass-panel" style={{ width: "100%", maxWidth: "600px", marginTop: "20px", padding: "2rem" }}>
+            <h3 style={{fontSize: "1.1rem", margin: "0 0 16px 0", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px"}}>
+              <span style={{ fontSize: '1.4rem' }}>📚</span> 
+              {scenarioId === "custom" ? "Your Custom Scenario History" : `Past History: Scenario ${scenarioId}`}
+            </h3>
+            <SessionHistory user={user} scenarioId={scenarioId} />
+          </div>
+        )}
       </main>
     </>
   );

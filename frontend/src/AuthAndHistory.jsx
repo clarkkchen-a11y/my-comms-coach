@@ -67,7 +67,7 @@ export function AuthUI({ setUser }) {
   );
 }
 
-export function SessionHistory({ user }) {
+export function SessionHistory({ user, scenarioId }) {
   const [sessions, setSessions] = useState([]);
 
   useEffect(() => {
@@ -78,10 +78,12 @@ export function SessionHistory({ user }) {
       snapshot.forEach(doc => {
         data.push({ id: doc.id, ...doc.data() });
       });
-      setSessions(data);
+      // Optionally filter locally right here to avoid composite indexes error in FB
+      const filtered = scenarioId ? data.filter(s => s.scenario_id === scenarioId) : data;
+      setSessions(filtered);
     });
     return unsubscribe;
-  }, [user]);
+  }, [user, scenarioId]);
 
   if (sessions.length === 0) return <p style={{fontSize: "0.85rem", opacity: 0.7}}>No past sessions yet.</p>;
 
@@ -90,7 +92,7 @@ export function SessionHistory({ user }) {
       {sessions.map(s => (
         <div key={s.id} style={{padding: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)'}}>
           <div style={{fontSize: "0.75rem", opacity: 0.6, marginBottom: '4px'}}>
-            {s.timestamp?.toDate ? s.timestamp.toDate().toLocaleString() : 'Recent'} - Level {s.scenario_id}
+            {s.timestamp?.toDate ? s.timestamp.toDate().toLocaleString() : 'Recent'}
           </div>
           <p style={{margin: "4px 0", fontSize: "0.9rem", fontWeight: "bold"}}>{s.summary}</p>
           <ul style={{margin: "4px 0", paddingLeft: "20px", fontSize: "0.85rem", color: 'var(--accent-color)'}}>

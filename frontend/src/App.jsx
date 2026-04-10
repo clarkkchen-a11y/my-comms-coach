@@ -145,7 +145,7 @@ function App() {
                     onChange={(e) => setScenarioId(e.target.value)}
                     style={{
                       width: "100%", padding: "10px", borderRadius: "8px",
-                      background: "var(--input-bg)", color: "inherit",
+                      backgroundColor: "var(--input-bg)", color: "inherit",
                       border: "1px solid var(--input-border)", fontSize: "0.9rem"
                     }}
                   >
@@ -164,7 +164,7 @@ function App() {
                         placeholder="E.g., I need to practice delivering negative feedback to a team member about their recent performance..."
                         style={{
                           width: "100%", height: "80px", padding: "10px", borderRadius: "8px",
-                          background: "var(--input-bg)", color: "inherit",
+                          backgroundColor: "var(--input-bg)", color: "inherit",
                           border: "1px solid var(--input-border)", fontSize: "0.85rem",
                           resize: "vertical"
                         }}
@@ -182,7 +182,7 @@ function App() {
                     value={selectedVoice}
                     onChange={(e) => setSelectedVoice(e.target.value)}
                     style={{
-                      padding: "8px 16px", borderRadius: "8px", background: "var(--input-bg)",
+                      padding: "8px 16px", borderRadius: "8px", backgroundColor: "var(--input-bg)",
                       color: "inherit", border: "1px solid var(--input-border)", fontSize: "1rem", cursor: "pointer"
                     }}
                   >

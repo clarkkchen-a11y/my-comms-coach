@@ -112,7 +112,12 @@ export function SessionHistory({ user, scenarioId, onTargetedPracticeClick }) {
             {s.tips?.map((t, i) => <li key={i}>{t}</li>)}
           </ul>
           
-          {(s.nativeness_score !== undefined) && (
+          {s.is_targeted_practice ? (
+            <div style={{marginTop: '12px', padding: '10px', background: 'rgba(128,128,128,0.1)', borderRadius: '8px'}}>
+              <div style={{fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '8px', opacity: 0.8}}>Shadowing Performance</div>
+              <ScoreBar label={s.targeted_metric || "Action"} score={s.targeted_score} priority />
+            </div>
+          ) : (s.nativeness_score !== undefined) ? (
             <div style={{marginTop: '12px', padding: '10px', background: 'rgba(128,128,128,0.1)', borderRadius: '8px'}}>
               <div style={{fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '8px', opacity: 0.8}}>MECE Performance Metrics</div>
               <ScoreBar label="Nativeness" score={s.nativeness_score} priority />
@@ -135,7 +140,7 @@ export function SessionHistory({ user, scenarioId, onTargetedPracticeClick }) {
                 </div>
               )}
             </div>
-          )}
+          ) : null}
         </div>
       ))}
     </div>

@@ -53,7 +53,28 @@ class CoachTools(llm.Toolset):
                 "timestamp": datetime.utcnow()
             })
             print(f"[{datetime.utcnow()}] Feedback saved successfully to Firestore.")
-        return "Feedback saved successfully. You may now inform the user that their feedback has been saved to their dashboard, and ask if they'd like to retry the scenario to improve."
+        return "Feedback saved successfully. You may now inform the user that their feedback has been saved."
+
+    @llm.function_tool(description="Save the final feedback and single score at the end of a targeted practice session.")
+    async def save_targeted_feedback(
+        self,
+        summary: Annotated[str, "A 1-2 sentence summary of their targeted practice performance."],
+        targeted_metric: Annotated[str, "The specific metric being trained (e.g., 'Nativeness' or 'Pronunciation')."],
+        score: Annotated[int, "Score 0-100 indicating their mastery of this specific targeted exercise."],
+    ):
+        print(f"[{datetime.utcnow()}] Saving targeted feedback for {self.uid}")
+        if self.uid and self.uid.strip():
+            doc_ref = db.collection("users").document(self.uid).collection("sessions").document()
+            doc_ref.set({
+                "scenario_id": self.scenario_id,
+                "summary": summary,
+                "targeted_metric": targeted_metric,
+                "targeted_score": score,
+                "is_targeted_practice": True,
+                "timestamp": datetime.utcnow()
+            })
+            print(f"[{datetime.utcnow()}] Targeted feedback saved successfully.")
+        return "Feedback saved. Ask if they want to repeat the shadowing or exit."
 
 server = AgentServer()
 
@@ -65,6 +86,7 @@ async def taylor_session(ctx: agents.JobContext):
     uid = ""
     scenario_id = "1"
     custom_scenario_text = ""
+    is_targeted_practice = False
 
     await ctx.connect(auto_subscribe=agents.AutoSubscribe.AUDIO_ONLY)
 
@@ -78,6 +100,7 @@ async def taylor_session(ctx: agents.JobContext):
                 uid = meta.get("uid", uid)
                 scenario_id = str(meta.get("scenario_id", scenario_id))
                 custom_scenario_text = meta.get("custom_scenario_text", custom_scenario_text)
+                is_targeted_practice = str(meta.get("is_targeted_practice", "false")).lower() == "true"
             except Exception:
                 pass
 
@@ -107,9 +130,32 @@ async def taylor_session(ctx: agents.JobContext):
     else:
         current_scenario_text = scenario_contexts.get(scenario_id, scenario_contexts["1"])
 
-    system_instruction = f"""
+    if is_targeted_practice:
+        system_instruction = f"""
 <persona>
-You are Lumina, a Senior QA Mentor in the Australian furniture industry.
+You are Taylor, an elite conversational vocal coach for non-native English speakers.
+Tone: Conversational, idiomatic, and highly natural. Adjust formality based on the specific scenario, but lean towards authentic real-world workplace conversation.
+</persona>
+
+<scenario>
+The user is doing a "Shadowing" targeted training session to improve their nativeness based on the following context/weakness:
+"{current_scenario_text}"
+</scenario>
+
+<instructions>
+1. GREETING: Welcome them to this targeted training session.
+2. MODELING: Speak a highly idiomatic, natural English sentence related strictly to the targeted context.
+3. SHADOWING: Ask the user to repeat the exact sentence back to you.
+4. EVALUATION: When they repeat, give immediate conversational micro-feedback. Correct any rigid or unnatural phrasing.
+5. ITERATION: Move on and give them a completely different, slightly harder sentence to repeat. Do this for exactly 3 distinct sentences.
+6. TOOL CALLING: At the absolute end of the 3 iterations, CALL THE TOOL `save_targeted_feedback` with the summary, the metric name (e.g., "Nativeness"), and a final score out of 100.
+7. CONCLUSION: Ask them if they'd like to practice another round.
+</instructions>
+"""
+    else:
+        system_instruction = f"""
+<persona>
+You are Taylor, a Senior QA Mentor in the Australian furniture industry.
 Your role is to coach non-native English speakers working as Quality Assurance (QA) Officers.
 Tone: Supportive, clear, professional, and encouraging, using an accessible vocabulary.
 </persona>

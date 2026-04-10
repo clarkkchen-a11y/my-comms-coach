@@ -19,6 +19,7 @@ function App() {
   const [selectedVoice, setSelectedVoice] = useState('Aoede');
   const [scenarioId, setScenarioId] = useState('1');
   const [customScenarioText, setCustomScenarioText] = useState("");
+  const [isTargetedMode, setIsTargetedMode] = useState(false);
   
   const [user, setUser] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
@@ -52,7 +53,7 @@ function App() {
       const customScenarioParam = scenarioId === 'custom' ? `&custom_scenario_text=${encodeURIComponent(customScenarioText)}` : '';
       
       const resp = await fetch(
-        `${backendUrl}/getToken?room=${roomName}&voice=${selectedVoice}&mic_sensitivity=${micSensitivity}&silence_duration_ms=${silenceDurationMs}&scenario_id=${scenarioId}${uidParam}${customScenarioParam}`
+        `${backendUrl}/getToken?room=${roomName}&voice=${selectedVoice}&mic_sensitivity=${micSensitivity}&silence_duration_ms=${silenceDurationMs}&scenario_id=${scenarioId}${uidParam}${customScenarioParam}&is_targeted_practice=${isTargetedMode}`
       );
       if (!resp.ok) {
         throw new Error('Failed to fetch token from backend');
@@ -134,7 +135,9 @@ function App() {
             </div>
           ) : !sessionActive ? (
             <div className="onboarding-view">
-              <span className="status-badge disconnected">● Ready to Practice</span>
+              <span className="status-badge disconnected">
+                {isTargetedMode ? "● Ready for Shadowing" : "● Ready to Practice"}
+              </span>
               
               <div style={panelStyle}>
                 <div>
@@ -142,7 +145,10 @@ function App() {
                   <select
                     className="custom-select"
                     value={scenarioId}
-                    onChange={(e) => setScenarioId(e.target.value)}
+                    onChange={(e) => {
+                      setScenarioId(e.target.value);
+                      setIsTargetedMode(false);
+                    }}
                     style={{
                       width: "100%", padding: "10px", borderRadius: "8px",
                       backgroundColor: "var(--input-bg)", color: "inherit",
@@ -321,6 +327,7 @@ function App() {
               user={user} 
               scenarioId={scenarioId} 
               onTargetedPracticeClick={(targetScenario) => {
+                setIsTargetedMode(true);
                 setScenarioId("custom");
                 setCustomScenarioText(targetScenario);
                 window.scrollTo({ top: 0, behavior: 'smooth' });

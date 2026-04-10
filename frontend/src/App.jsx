@@ -7,6 +7,9 @@ import {
   useVoiceAssistant,
 } from '@livekit/components-react';
 import '@livekit/components-styles';
+import { auth, db } from './firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { AuthUI, SessionHistory } from './AuthAndHistory';
 
 function App() {
   const [theme, setTheme] = useState('dark');
@@ -14,10 +17,12 @@ function App() {
   const [token, setToken] = useState('');
   const [wsUrl, setWsUrl] = useState('');
   const [selectedVoice, setSelectedVoice] = useState('Aoede');
+  const [scenarioId, setScenarioId] = useState('1');
+  
+  const [user, setUser] = useState(null);
+  const [loadingAuth, setLoadingAuth] = useState(true);
 
-  // mic_sensitivity: "high" = picks up voice easily, "low" = needs louder/clearer speech
   const [micSensitivity, setMicSensitivity] = useState('high');
-  // silence_duration_ms: how many ms of silence before Taylor responds
   const [silenceDurationMs, setSilenceDurationMs] = useState(1000);
 
   const toggleTheme = () => {
@@ -28,6 +33,11 @@ function App() {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoadingAuth(false);
+    });
+    return unsubscribe;
   }, []);
 
   const startSession = async () => {
@@ -35,10 +45,12 @@ function App() {
       const backendUrl = import.meta.env.PROD
         ? "https://my-comms-coach-backend-161209776732.us-central1.run.app"
         : "http://localhost:8000";
-      // Use a unique room name per session so LiveKit dispatches a fresh agent job
+      
       const roomName = `session-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const uidParam = user ? `&uid=${user.uid}` : '';
+      
       const resp = await fetch(
-        `${backendUrl}/getToken?room=${roomName}&voice=${selectedVoice}&mic_sensitivity=${micSensitivity}&silence_duration_ms=${silenceDurationMs}`
+        `${backendUrl}/getToken?room=${roomName}&voice=${selectedVoice}&mic_sensitivity=${micSensitivity}&silence_duration_ms=${silenceDurationMs}&scenario_id=${scenarioId}${uidParam}`
       );
       if (!resp.ok) {
         throw new Error('Failed to fetch token from backend');
@@ -57,7 +69,6 @@ function App() {
     setSessionActive(false);
   };
 
-  // Human-readable response speed label
   const speedLabel =
     silenceDurationMs <= 400 ? "Very Snappy" :
     silenceDurationMs <= 700 ? "Snappy" :
@@ -66,71 +77,63 @@ function App() {
     "Very Patient";
 
   const panelStyle = {
-    marginBottom: "24px",
-    marginLeft: "auto",
-    marginRight: "auto",
-    width: "100%",
-    maxWidth: "320px",
-    padding: "16px 20px",
-    background: "rgba(255,255,255,0.05)",
-    borderRadius: "12px",
-    border: "1px solid rgba(255,255,255,0.08)",
+    marginBottom: "20px", display: "flex", flexDirection: "column", gap: "16px",
+    width: "100%", maxWidth: "320px", margin: "0 auto 24px", boxSizing: "border-box"
   };
 
-  const labelStyle = {
-    fontSize: "0.85rem",
-    color: "var(--text-secondary)",
-    marginBottom: "6px",
-    display: "block",
-  };
-
-  const hintStyle = {
-    fontSize: "0.75rem",
-    opacity: 0.55,
-    marginTop: "2px",
-    display: "block",
-  };
-
-  const toggleGroupStyle = {
-    display: "flex",
-    borderRadius: "8px",
-    overflow: "hidden",
-    border: "1px solid rgba(255,255,255,0.15)",
-  };
-
-  const toggleBtnStyle = (active) => ({
-    flex: 1,
-    padding: "8px 0",
-    background: active ? "var(--accent-color)" : "transparent",
-    color: active ? "white" : "var(--text-secondary)",
-    border: "none",
-    cursor: "pointer",
-    fontSize: "0.85rem",
-    fontWeight: active ? 600 : 400,
-    transition: "all 0.2s",
-  });
+  if (loadingAuth) return <div style={{textAlign: 'center', padding: '50px'}}>Loading...</div>;
 
   return (
     <>
       <header className="header">
         <div className="logo">My Comms Coach</div>
-        <button className="theme-toggle" onClick={toggleTheme}>
-          {theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode'}
-        </button>
+        <div style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
+          {user && (
+            <button className="theme-toggle" onClick={() => signOut(auth)}>Sign Out</button>
+          )}
+          <button className="theme-toggle" onClick={toggleTheme}>
+            {theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode'}
+          </button>
+        </div>
       </header>
 
       <main className="container">
         <div className="glass-panel">
-          {!sessionActive ? (
+          {!user ? (
+            <div className="onboarding-view">
+              <h1 className="title" style={{marginBottom: '20px'}}>Sign in to Coach</h1>
+              <AuthUI setUser={setUser} />
+            </div>
+          ) : !sessionActive ? (
             <div className="onboarding-view">
               <span className="status-badge disconnected">● Ready to Practice</span>
               <h1 className="title">Inspection Room</h1>
-              <p className="subtitle">
-                Communication Scenario Practice.<br />
-                Your AI coach, Taylor, is ready to chat.
-              </p>
+              
+              <div style={panelStyle}>
+                <div>
+                  <label style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "6px", display: "block" }}>Select Scenario:</label>
+                  <select
+                    value={scenarioId}
+                    onChange={(e) => setScenarioId(e.target.value)}
+                    style={{
+                      width: "100%", padding: "10px", borderRadius: "8px",
+                      background: "rgba(255, 255, 255, 0.1)", color: "inherit",
+                      border: "1px solid rgba(255,255,255,0.2)", fontSize: "0.9rem"
+                    }}
+                  >
+                    <option value="1" style={{color:"black"}}>Level 1: The Loading Dock Chitchat</option>
+                    <option value="2" style={{color:"black"}}>Level 2: The Visual Inspection</option>
+                    <option value="3" style={{color:"black"}}>Level 3: The Assembly Guide</option>
+                    <option value="4" style={{color:"black"}}>Level 4: The Supplier Push-back</option>
+                  </select>
+                </div>
+                
+                <div style={{background: "rgba(255,255,255,0.05)", padding: "12px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.08)"}}>
+                  <h3 style={{fontSize: "0.85rem", margin: "0 0 10px 0"}}>Past Session Feedback</h3>
+                  <SessionHistory user={user} />
+                </div>
+              </div>
 
-              {/* Voice Selection */}
               <div style={{ marginBottom: "20px", display: "flex", flexDirection: "column", gap: "8px", alignItems: "center" }}>
                 <label style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>Choose Taylor's Voice:</label>
                 <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
@@ -138,13 +141,8 @@ function App() {
                     value={selectedVoice}
                     onChange={(e) => setSelectedVoice(e.target.value)}
                     style={{
-                      padding: "8px 16px",
-                      borderRadius: "8px",
-                      background: "rgba(255, 255, 255, 0.1)",
-                      color: "inherit",
-                      border: "1px solid rgba(255,255,255,0.2)",
-                      fontSize: "1rem",
-                      cursor: "pointer"
+                      padding: "8px 16px", borderRadius: "8px", background: "rgba(255, 255, 255, 0.1)",
+                      color: "inherit", border: "1px solid rgba(255,255,255,0.2)", fontSize: "1rem", cursor: "pointer"
                     }}
                   >
                     <option value="Aoede" style={{color: "black"}}>Professional Female</option>
@@ -153,93 +151,6 @@ function App() {
                     <option value="Kore" style={{color: "black"}}>Warm Female</option>
                     <option value="Puck" style={{color: "black"}}>Energetic Male</option>
                   </select>
-
-                  <button
-                    onClick={() => {
-                      const audio = new Audio(`/voices/${selectedVoice}.wav`);
-                      audio.play().catch(e => console.error("Error playing audio", e));
-                    }}
-                    style={{
-                      background: "transparent",
-                      border: "1px solid var(--accent-color)",
-                      color: "var(--accent-color)",
-                      padding: "8px 16px",
-                      borderRadius: "8px",
-                      cursor: "pointer",
-                      fontSize: "0.9rem",
-                      transition: "all 0.2s"
-                    }}
-                    onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(100, 108, 255, 0.1)'; }}
-                    onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                  >
-                    ▶ Play Sample
-                  </button>
-                </div>
-              </div>
-
-              {/* Conversation Settings — static, not floating */}
-              <div style={panelStyle}>
-                <h3 style={{
-                  fontSize: "0.95rem",
-                  fontWeight: 600,
-                  margin: "0 0 16px 0",
-                  paddingBottom: "10px",
-                  borderBottom: "1px solid rgba(255,255,255,0.1)"
-                }}>
-                  Conversation Settings
-                </h3>
-
-                {/* Mic Sensitivity */}
-                <div style={{ marginBottom: "16px" }}>
-                  <label style={{ ...labelStyle, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    Microphone Sensitivity
-                    <span className="tooltip-wrapper">
-                      <span className="tooltip-icon">?</span>
-                      <span className="tooltip-bubble">High = detects voice more easily. Low = filters background noise.</span>
-                    </span>
-                  </label>
-                  <div style={{ ...toggleGroupStyle, marginTop: "8px" }}>
-                    <button
-                      style={toggleBtnStyle(micSensitivity === 'high')}
-                      onClick={() => setMicSensitivity('high')}
-                    >
-                      High
-                    </button>
-                    <button
-                      style={toggleBtnStyle(micSensitivity === 'low')}
-                      onClick={() => setMicSensitivity('low')}
-                    >
-                      Low
-                    </button>
-                  </div>
-                </div>
-
-                {/* Response Patience */}
-                <div>
-                  <label style={{ ...labelStyle, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    Silence Patience (Turn-Taking)
-                    <span className="tooltip-wrapper">
-                      <span className="tooltip-icon">?</span>
-                      <span className="tooltip-bubble">Snappy = Taylor interrupts quicker. Patient = Taylor gives you more time to think mid-sentence.</span>
-                    </span>
-                  </label>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "8px" }}>
-                    <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)", whiteSpace: "nowrap" }}>Snappy</span>
-                    <input
-                      type="range"
-                      min="200"
-                      max="2000"
-                      step="100"
-                      value={silenceDurationMs}
-                      onChange={(e) => setSilenceDurationMs(parseInt(e.target.value))}
-                      style={{ flex: 1 }}
-                      title="Lower = Taylor responds faster. Higher = Taylor gives you more time to pause mid-thought."
-                    />
-                    <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)", whiteSpace: "nowrap" }}>Patient</span>
-                  </div>
-                  <div style={{ textAlign: "center", fontSize: "0.8rem", fontWeight: 600, color: "var(--accent-color)", marginTop: "4px" }}>
-                    {speedLabel} ({(silenceDurationMs / 1000).toFixed(1)}s pause)
-                  </div>
                 </div>
               </div>
 
@@ -261,12 +172,12 @@ function App() {
               onDisconnected={onDisconnected}
             >
               <RoomAudioRenderer />
-
               <span className="status-badge connected">● Active Session</span>
-              <h1 className="title">Chatting with Taylor...</h1>
-
+              <h1 className="title">Chatting with Lumina...</h1>
+              <p style={{fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '20px'}}>
+                Roleplay is active. Don't forget to ask for a redo to practice the feedback!
+              </p>
               <ActiveSessionView />
-
               <VoiceAssistantControlBar />
             </LiveKitRoom>
           )}

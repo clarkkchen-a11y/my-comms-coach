@@ -26,6 +26,8 @@ async def get_token(
     voice: str = "Aoede",
     mic_sensitivity: str = "high",
     silence_duration_ms: int = 1000,
+    uid: str = "",
+    scenario_id: str = "1",
 ):
     """
     Generate a secure LiveKit connection token for the frontend
@@ -43,6 +45,8 @@ async def get_token(
         "voice": voice,
         "mic_sensitivity": mic_sensitivity,
         "silence_duration_ms": silence_duration_ms,
+        "uid": uid,
+        "scenario_id": scenario_id,
     })
 
     # Create the access token for the frontend participant

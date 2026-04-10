@@ -101,7 +101,7 @@ body {
   border-radius: 24px;
   padding: 3rem;
   max-width: 600px;
-  width: 100%;
+  width: 95%;
   text-align: center;
   box-shadow: 0 20px 40px var(--shadow-color);
 }
@@ -265,4 +265,37 @@ p.subtitle {
 .lk-audio-bar {
   background-color: var(--accent-color) !important;
   border-radius: 4px;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 600px) {
+  .header {
+    padding: 1rem;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .container {
+    padding: 1rem;
+  }
+
+  .glass-panel {
+    padding: 1.5rem;
+    border-radius: 16px;
+  }
+
+  h1.title {
+    font-size: 1.8rem;
+  }
+
+  p.subtitle {
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  /* Update header buttons for mobile */
+  .theme-toggle {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
 }

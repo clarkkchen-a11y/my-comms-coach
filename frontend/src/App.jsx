@@ -143,9 +143,10 @@ function App() {
                     value={scenarioId}
                     onChange={(e) => setScenarioId(e.target.value)}
                     style={{
-                      width: "100%", padding: "10px", borderRadius: "8px",
+                      width: "100%", padding: "10px 36px 10px 10px", borderRadius: "8px",
                       background: "rgba(255, 255, 255, 0.1)", color: "inherit",
-                      border: "1px solid rgba(255,255,255,0.2)", fontSize: "0.9rem"
+                      border: "1px solid rgba(255,255,255,0.2)", fontSize: "0.9rem",
+                      appearance: "auto"
                     }}
                   >
                     <option value="1" style={{color:"black"}}>Scenario 1: The Loading Dock Chitchat</option>
@@ -185,8 +186,9 @@ function App() {
                     value={selectedVoice}
                     onChange={(e) => setSelectedVoice(e.target.value)}
                     style={{
-                      padding: "8px 16px", borderRadius: "8px", background: "rgba(255, 255, 255, 0.1)",
-                      color: "inherit", border: "1px solid rgba(255,255,255,0.2)", fontSize: "1rem", cursor: "pointer"
+                      padding: "8px 36px 8px 16px", borderRadius: "8px", background: "rgba(255, 255, 255, 0.1)",
+                      color: "inherit", border: "1px solid rgba(255,255,255,0.2)", fontSize: "1rem", cursor: "pointer",
+                      appearance: "auto"
                     }}
                   >
                     <option value="Aoede" style={{color: "black"}}>Professional Female</option>

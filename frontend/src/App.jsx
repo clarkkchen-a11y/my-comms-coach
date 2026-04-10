@@ -94,7 +94,7 @@ function App() {
     display: "flex",
     borderRadius: "8px",
     overflow: "hidden",
-    border: "1px solid rgba(255,255,255,0.15)",
+    border: "1px solid var(--input-border)",
   };
 
   const toggleBtnStyle = (active) => ({
@@ -144,16 +144,16 @@ function App() {
                     onChange={(e) => setScenarioId(e.target.value)}
                     style={{
                       width: "100%", padding: "10px 36px 10px 10px", borderRadius: "8px",
-                      background: "rgba(255, 255, 255, 0.1)", color: "inherit",
-                      border: "1px solid rgba(255,255,255,0.2)", fontSize: "0.9rem",
+                      background: "var(--input-bg)", color: "inherit",
+                      border: "1px solid var(--input-border)", fontSize: "0.9rem",
                       appearance: "auto"
                     }}
                   >
-                    <option value="1" style={{color:"black"}}>Scenario 1: The Loading Dock Chitchat</option>
-                    <option value="2" style={{color:"black"}}>Scenario 2: The Visual Inspection</option>
-                    <option value="3" style={{color:"black"}}>Scenario 3: The Assembly Guide</option>
-                    <option value="4" style={{color:"black"}}>Scenario 4: The Supplier Push-back</option>
-                    <option value="custom" style={{color:"black"}}>Create Custom Scenario...</option>
+                    <option value="1">Scenario 1: The Loading Dock Chitchat</option>
+                    <option value="2">Scenario 2: The Visual Inspection</option>
+                    <option value="3">Scenario 3: The Assembly Guide</option>
+                    <option value="4">Scenario 4: The Supplier Push-back</option>
+                    <option value="custom">Create Custom Scenario...</option>
                   </select>
                   
                   {scenarioId === "custom" && (
@@ -164,8 +164,8 @@ function App() {
                         placeholder="E.g., I need to practice delivering negative feedback to a team member about their recent performance..."
                         style={{
                           width: "100%", height: "80px", padding: "10px", borderRadius: "8px",
-                          background: "rgba(255, 255, 255, 0.1)", color: "inherit",
-                          border: "1px solid rgba(255,255,255,0.2)", fontSize: "0.85rem",
+                          background: "var(--input-bg)", color: "inherit",
+                          border: "1px solid var(--input-border)", fontSize: "0.85rem",
                           resize: "vertical"
                         }}
                       />
@@ -173,7 +173,7 @@ function App() {
                   )}
                 </div>
                 
-                <div style={{background: "rgba(255,255,255,0.05)", padding: "12px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.08)"}}>
+                <div style={{background: "var(--panel-bg)", padding: "12px", borderRadius: "8px", border: "1px solid var(--panel-border)"}}>
                   <h3 style={{fontSize: "0.85rem", margin: "0 0 10px 0"}}>Past Session Feedback</h3>
                   <SessionHistory user={user} />
                 </div>
@@ -186,16 +186,16 @@ function App() {
                     value={selectedVoice}
                     onChange={(e) => setSelectedVoice(e.target.value)}
                     style={{
-                      padding: "8px 36px 8px 16px", borderRadius: "8px", background: "rgba(255, 255, 255, 0.1)",
-                      color: "inherit", border: "1px solid rgba(255,255,255,0.2)", fontSize: "1rem", cursor: "pointer",
+                      padding: "8px 36px 8px 16px", borderRadius: "8px", background: "var(--input-bg)",
+                      color: "inherit", border: "1px solid var(--input-border)", fontSize: "1rem", cursor: "pointer",
                       appearance: "auto"
                     }}
                   >
-                    <option value="Aoede" style={{color: "black"}}>Professional Female</option>
-                    <option value="Charon" style={{color: "black"}}>Deep Male</option>
-                    <option value="Fenrir" style={{color: "black"}}>Casual Male</option>
-                    <option value="Kore" style={{color: "black"}}>Warm Female</option>
-                    <option value="Puck" style={{color: "black"}}>Energetic Male</option>
+                    <option value="Aoede">Professional Female</option>
+                    <option value="Charon">Deep Male</option>
+                    <option value="Fenrir">Casual Male</option>
+                    <option value="Kore">Warm Female</option>
+                    <option value="Puck">Energetic Male</option>
                   </select>
 
                   <button

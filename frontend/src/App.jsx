@@ -140,13 +140,13 @@ function App() {
                 <div>
                   <label style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "6px", display: "block" }}>Select Scenario:</label>
                   <select
+                    className="custom-select"
                     value={scenarioId}
                     onChange={(e) => setScenarioId(e.target.value)}
                     style={{
-                      width: "100%", padding: "10px 36px 10px 10px", borderRadius: "8px",
+                      width: "100%", padding: "10px", borderRadius: "8px",
                       background: "var(--input-bg)", color: "inherit",
-                      border: "1px solid var(--input-border)", fontSize: "0.9rem",
-                      appearance: "auto"
+                      border: "1px solid var(--input-border)", fontSize: "0.9rem"
                     }}
                   >
                     <option value="1">Scenario 1: The Loading Dock Chitchat</option>
@@ -183,12 +183,12 @@ function App() {
                 <label style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>Choose Taylor's Voice:</label>
                 <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                   <select
+                    className="custom-select"
                     value={selectedVoice}
                     onChange={(e) => setSelectedVoice(e.target.value)}
                     style={{
-                      padding: "8px 36px 8px 16px", borderRadius: "8px", background: "var(--input-bg)",
-                      color: "inherit", border: "1px solid var(--input-border)", fontSize: "1rem", cursor: "pointer",
-                      appearance: "auto"
+                      padding: "8px 16px", borderRadius: "8px", background: "var(--input-bg)",
+                      color: "inherit", border: "1px solid var(--input-border)", fontSize: "1rem", cursor: "pointer"
                     }}
                   >
                     <option value="Aoede">Professional Female</option>

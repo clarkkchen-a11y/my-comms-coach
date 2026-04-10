@@ -1,15 +1,21 @@
-import { useState, useEffect } from 'react';
-import {
-  LiveKitRoom,
-  RoomAudioRenderer,
-  BarVisualizer,
-  VoiceAssistantControlBar,
-  useVoiceAssistant,
-} from '@livekit/components-react';
+import { useState, useEffect, lazy, Suspense } from 'react';
+import { useVoiceAssistant, BarVisualizer } from '@livekit/components-react';
 import '@livekit/components-styles';
+
+// Lazy-load heavy LiveKit components — only downloaded when a session starts
+const LiveKitRoom = lazy(() =>
+  import('@livekit/components-react').then(m => ({ default: m.LiveKitRoom }))
+);
+const RoomAudioRenderer = lazy(() =>
+  import('@livekit/components-react').then(m => ({ default: m.RoomAudioRenderer }))
+);
+const VoiceAssistantControlBar = lazy(() =>
+  import('@livekit/components-react').then(m => ({ default: m.VoiceAssistantControlBar }))
+);
 import { auth } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { AuthUI, SessionHistory } from './AuthAndHistory';
+import { ScenarioManager, useScenarios, getBackendScenarioId, getBackendCustomText, seedDefaultScenarios } from './ScenarioManager';
 
 function App() {
   const [theme, setTheme] = useState('dark');
@@ -17,12 +23,16 @@ function App() {
   const [token, setToken] = useState('');
   const [wsUrl, setWsUrl] = useState('');
   const [selectedVoice, setSelectedVoice] = useState('Aoede');
-  const [scenarioId, setScenarioId] = useState('1');
-  const [customScenarioText, setCustomScenarioText] = useState("");
+  // selectedFsId: Firestore doc ID of selected scenario (e.g. 'default-1' or a custom doc ID)
+  const [selectedFsId, setSelectedFsId] = useState('default-1');
   const [isTargetedMode, setIsTargetedMode] = useState(false);
+  const [targetedPracticeText, setTargetedPracticeText] = useState("");
   
   const [user, setUser] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
+
+  // Load scenarios for the current user
+  const scenarios = useScenarios(user?.uid);
 
   const [micSensitivity, setMicSensitivity] = useState('high');
   const [silenceDurationMs, setSilenceDurationMs] = useState(1000);
@@ -35,9 +45,13 @@ function App() {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       setLoadingAuth(false);
+      // Seed the 4 default scenarios on first login
+      if (currentUser) {
+        await seedDefaultScenarios(currentUser.uid);
+      }
     });
     return unsubscribe;
   }, [theme]);
@@ -50,10 +64,26 @@ function App() {
       
       const roomName = `session-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
       const uidParam = user ? `&uid=${user.uid}` : '';
-      const customScenarioParam = scenarioId === 'custom' ? `&custom_scenario_text=${encodeURIComponent(customScenarioText)}` : '';
+
+      // Derive backend scenario params from selected Firestore scenario
+      let backendScenarioId = '1';
+      let customScenarioParam = '';
+      if (isTargetedMode) {
+        backendScenarioId = 'custom';
+        customScenarioParam = `&custom_scenario_text=${encodeURIComponent(targetedPracticeText)}`;
+      } else {
+        const selectedScenario = scenarios.find(s => s.firestoreId === selectedFsId);
+        if (selectedScenario) {
+          backendScenarioId = getBackendScenarioId(selectedScenario);
+          const customText = getBackendCustomText(selectedScenario);
+          if (customText) {
+            customScenarioParam = `&custom_scenario_text=${encodeURIComponent(customText)}`;
+          }
+        }
+      }
       
       const resp = await fetch(
-        `${backendUrl}/getToken?room=${roomName}&voice=${selectedVoice}&mic_sensitivity=${micSensitivity}&silence_duration_ms=${silenceDurationMs}&scenario_id=${scenarioId}${uidParam}${customScenarioParam}&is_targeted_practice=${isTargetedMode}`
+        `${backendUrl}/getToken?room=${roomName}&voice=${selectedVoice}&mic_sensitivity=${micSensitivity}&silence_duration_ms=${silenceDurationMs}&scenario_id=${backendScenarioId}${uidParam}${customScenarioParam}&is_targeted_practice=${isTargetedMode}`
       );
       if (!resp.ok) {
         throw new Error('Failed to fetch token from backend');
@@ -140,44 +170,14 @@ function App() {
               </span>
               
               <div style={panelStyle}>
-                <div>
-                  <label style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "6px", display: "block" }}>Select Scenario:</label>
-                  <select
-                    className="custom-select"
-                    value={scenarioId}
-                    onChange={(e) => {
-                      setScenarioId(e.target.value);
-                      setIsTargetedMode(false);
-                    }}
-                    style={{
-                      width: "100%", padding: "10px", borderRadius: "8px",
-                      backgroundColor: "var(--input-bg)", color: "inherit",
-                      border: "1px solid var(--input-border)", fontSize: "0.9rem"
-                    }}
-                  >
-                    <option value="1">Scenario 1: The Loading Dock Chitchat</option>
-                    <option value="2">Scenario 2: The Visual Inspection</option>
-                    <option value="3">Scenario 3: The Assembly Guide</option>
-                    <option value="4">Scenario 4: The Supplier Push-back</option>
-                    <option value="custom">Create Custom Scenario...</option>
-                  </select>
-                  
-                  {scenarioId === "custom" && (
-                    <div style={{ marginTop: "10px" }}>
-                      <textarea
-                        value={customScenarioText}
-                        onChange={(e) => setCustomScenarioText(e.target.value)}
-                        placeholder="E.g., I need to practice delivering negative feedback to a team member about their recent performance..."
-                        style={{
-                          width: "100%", height: "80px", padding: "10px", borderRadius: "8px",
-                          backgroundColor: "var(--input-bg)", color: "inherit",
-                          border: "1px solid var(--input-border)", fontSize: "0.85rem",
-                          resize: "vertical"
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
+                <ScenarioManager
+                  uid={user?.uid}
+                  selectedFsId={selectedFsId}
+                  onSelect={(fsId) => {
+                    setSelectedFsId(fsId);
+                    setIsTargetedMode(false);
+                  }}
+                />
               </div>
 
               <div style={{ marginBottom: "20px", display: "flex", flexDirection: "column", gap: "8px", alignItems: "center" }}>
@@ -293,48 +293,68 @@ function App() {
               </button>
             </div>
           ) : (
-            <LiveKitRoom
-              serverUrl={wsUrl}
-              token={token}
-              connect={true}
-              audio={{
-                echoCancellation: true,
-                noiseSuppression: true,
-                autoGainControl: true,
-              }}
-              video={false}
-              onDisconnected={onDisconnected}
-            >
-              <RoomAudioRenderer />
-              <span className="status-badge connected">● Active Session</span>
-              <h1 className="title">Chatting with Lumina...</h1>
-              <p style={{fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '20px'}}>
-                Roleplay is active. Don't forget to ask for a redo to practice the feedback!
-              </p>
-              <ActiveSessionView />
-              <VoiceAssistantControlBar />
-            </LiveKitRoom>
+            <Suspense fallback={
+              <div style={{textAlign: 'center', padding: '40px', opacity: 0.7}}>
+                <div style={{fontSize: '2rem', marginBottom: '12px'}}>🎙️</div>
+                <p>Connecting to Taylor...</p>
+              </div>
+            }>
+              <LiveKitRoom
+                serverUrl={wsUrl}
+                token={token}
+                connect={true}
+                audio={{
+                  echoCancellation: true,
+                  noiseSuppression: true,
+                  autoGainControl: true,
+                }}
+                video={false}
+                onDisconnected={onDisconnected}
+              >
+                <RoomAudioRenderer />
+                <span className="status-badge connected">● Active Session</span>
+                <h1 className="title">
+                  {isTargetedMode ? '🎯 Shadowing with Taylor...' : 'Chatting with Taylor...'}
+                </h1>
+                <p style={{fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '20px'}}>
+                  {isTargetedMode
+                    ? 'Listen carefully, then repeat after Taylor.'
+                    : "Roleplay is active. Don't forget to ask for a redo to practice the feedback!"}
+                </p>
+                <ActiveSessionView />
+                <VoiceAssistantControlBar />
+              </LiveKitRoom>
+            </Suspense>
           )}
         </div>
 
-        {token === "" && user && (
-          <div className="glass-panel" style={{ width: "100%", maxWidth: "600px", marginTop: "20px", padding: "2rem" }}>
-            <h3 style={{fontSize: "1.1rem", margin: "0 0 16px 0", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px"}}>
-              <span style={{ fontSize: '1.4rem' }}>📚</span> 
-              {scenarioId === "custom" ? "Your Custom Scenario History" : `Past History: Scenario ${scenarioId}`}
-            </h3>
-            <SessionHistory 
-              user={user} 
-              scenarioId={scenarioId} 
-              onTargetedPracticeClick={(targetScenario) => {
-                setIsTargetedMode(true);
-                setScenarioId("custom");
-                setCustomScenarioText(targetScenario);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }} 
-            />
-          </div>
-        )}
+        {token === "" && user && (() => {
+            const selectedScenario = scenarios.find(s => s.firestoreId === selectedFsId);
+            const historyScenarioId = selectedScenario
+              ? (selectedScenario.isDefault
+                ? { 'default-1': '1', 'default-2': '2', 'default-3': '3', 'default-4': '4' }[selectedScenario.firestoreId] || 'custom'
+                : 'custom')
+              : '1';
+            const historyLabel = selectedScenario?.title || `Scenario ${historyScenarioId}`;
+            return (
+              <div className="glass-panel" style={{ width: "100%", maxWidth: "600px", marginTop: "20px", padding: "2rem" }}>
+                <h3 style={{fontSize: "1.1rem", margin: "0 0 16px 0", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px"}}>
+                  <span style={{ fontSize: '1.4rem' }}>📚</span> 
+                  Past History: {historyLabel}
+                </h3>
+                <SessionHistory 
+                  user={user} 
+                  scenarioId={historyScenarioId} 
+                  onTargetedPracticeClick={(targetScenario) => {
+                    setIsTargetedMode(true);
+                    setTargetedPracticeText(targetScenario);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }} 
+                />
+              </div>
+            );
+          })()
+        }
       </main>
     </>
   );

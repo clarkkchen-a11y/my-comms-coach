@@ -250,7 +250,11 @@ function App() {
               serverUrl={wsUrl}
               token={token}
               connect={true}
-              audio={true}
+              audio={{
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true,
+              }}
               video={false}
               onDisconnected={onDisconnected}
             >

@@ -37,8 +37,8 @@ class Taylor(Agent):
 server = AgentServer()
 
 
-# No agent_name = automatic dispatch (agent joins every room automatically)
-@server.rtc_session
+# agent_name="taylor" must match the name used in server.py's create_dispatch call
+@server.rtc_session(agent_name="taylor")
 async def taylor_session(ctx: agents.JobContext):
     # Parse voice and VAD settings from participant metadata
     chosen_voice = "Aoede"
@@ -74,7 +74,7 @@ async def taylor_session(ctx: agents.JobContext):
 
     session = AgentSession(
         llm=google.realtime.RealtimeModel(
-            model="gemini-2.5-flash-native-audio-preview-12-2025",
+            model="gemini-2.0-flash-exp",
             voice=chosen_voice,
             realtime_input_config=realtime_input_config,
         ),

@@ -40,6 +40,9 @@ async def taylor_session(ctx: agents.JobContext):
     mic_sensitivity = "high"
     silence_duration_ms = 1000
 
+    # Connect to the room
+    await ctx.connect(auto_subscribe=agents.AutoSubscribe.AUDIO_ONLY)
+
     for p in ctx.room.remote_participants.values():
         if p.metadata:
             try:

@@ -36,7 +36,7 @@ class CoachTools(llm.Toolset):
         fluency_score: Annotated[int, "Score 0-100 indicating pacing, rhythm, and lack of hesitation."],
         pronunciation_score: Annotated[int, "Score 0-100 indicating physical clarity of articulation and accent mechanics."],
         pragmatic_score: Annotated[int, "Score 0-100 indicating how effectively they achieved the practical goal (e.g. diplomacy)."],
-        suggested_practice_scenario: Annotated[str, "A short, distinct follow-up roleplay prompt specifically designed to target and fix their weakest MECE score."]
+        suggested_practice_scenario: Annotated[str, "CRITICAL: Identify the absolute worst sentence or expression the user used in this session. Return a string containing exactly what they said wrong, and what the natural/native-English way to say it should be. This fuels their next Shadowing exercise."]
     ):
         print(f"[{datetime.utcnow()}] Saving feedback for {self.uid} on scenario {self.scenario_id}")
         if self.uid and self.uid.strip():
@@ -138,18 +138,19 @@ Tone: Conversational, idiomatic, and highly natural. Adjust formality based on t
 </persona>
 
 <scenario>
-The user is doing a "Shadowing" targeted training session to improve their nativeness based on the following context/weakness:
+The user is returning for a "Shadowing" session to correct a specific poorly phrased or unnatural expression they used in their previous session. 
+Here is their specific mistake and the context:
 "{current_scenario_text}"
 </scenario>
 
 <instructions>
-1. GREETING: Welcome them to this targeted training session.
-2. MODELING: Speak a highly idiomatic, natural English sentence related strictly to the targeted context.
-3. SHADOWING: Ask the user to repeat the exact sentence back to you.
-4. EVALUATION: When they repeat, give immediate conversational micro-feedback. Correct any rigid or unnatural phrasing.
-5. ITERATION: Move on and give them a completely different, slightly harder sentence to repeat. Do this for exactly 3 distinct sentences.
-6. TOOL CALLING: At the absolute end of the 3 iterations, CALL THE TOOL `save_targeted_feedback` with the summary, the metric name (e.g., "Nativeness"), and a final score out of 100.
-7. CONCLUSION: Ask them if they'd like to practice another round.
+1. GREETING: Welcome them back. Briefly remind them of the exact expression they struggled with in the last session.
+2. MODELING: Speak the highly idiomatic, natural, correct English sentence that they *should* have used in that situation.
+3. SHADOWING: Ask the user to repeat this exact native-style sentence back to you.
+4. EVALUATION: When they repeat, give immediate conversational micro-feedback on their pronunciation or delivery.
+5. REPETITION: Have them repeat the exact same corrected sentence again until they sound completely natural and confident (up to 3 times total).
+6. TOOL CALLING: At the absolute end of the shadowing exercise, CALL THE TOOL `save_targeted_feedback` with the summary, the metric name ("Nativeness"), and a final score out of 100 based entirely on their shadowing performance today.
+7. CONCLUSION: Ask them if they'd like to practice another phrase or conclude.
 </instructions>
 """
     else:

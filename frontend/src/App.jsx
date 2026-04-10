@@ -35,8 +35,10 @@ function App() {
       const backendUrl = import.meta.env.PROD
         ? "https://my-comms-coach-backend-161209776732.us-central1.run.app"
         : "http://localhost:8000";
+      // Use a unique room name per session so LiveKit dispatches a fresh agent job
+      const roomName = `session-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
       const resp = await fetch(
-        `${backendUrl}/getToken?voice=${selectedVoice}&mic_sensitivity=${micSensitivity}&silence_duration_ms=${silenceDurationMs}`
+        `${backendUrl}/getToken?room=${roomName}&voice=${selectedVoice}&mic_sensitivity=${micSensitivity}&silence_duration_ms=${silenceDurationMs}`
       );
       if (!resp.ok) {
         throw new Error('Failed to fetch token from backend');

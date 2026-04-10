@@ -2,13 +2,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+import json
 from livekit import agents
-from livekit.agents import AgentServer, AgentSession, Agent
+from livekit.agents import AgentServer, AgentSession, Agent, JobContext, JobRequest
 from livekit.plugins import google
 from livekit.plugins.google.realtime.api_proto import types
 import firebase_admin
 from firebase_admin import credentials, firestore
-import json
 
 # ----- FIREBASE INIT -----
 cred = credentials.Certificate("my-comms-coach-firebase-adminsdk-fbsvc-5c191af4c1.json")
@@ -29,28 +29,30 @@ class Taylor(Agent):
         )
 
 
+async def auto_accept(request: JobRequest) -> None:
+    """Accept every incoming job automatically."""
+    await request.accept(name="Taylor", identity="taylor-agent")
+
+
 server = AgentServer()
 
 
-@server.rtc_session
-async def taylor_session(ctx: agents.JobContext):
-    # Parse requested voice and sensitivity settings from participant metadata
+@server.rtc_session(on_request=auto_accept)
+async def taylor_session(ctx: JobContext):
+    # Parse voice and VAD settings from participant metadata
     chosen_voice = "Aoede"
-    # mic_sensitivity: "high" = picks up voice easily, "low" = ignores background noise
     mic_sensitivity = "high"
-    # silence_duration_ms: ms of silence before AI considers you done speaking
-    silence_duration_ms = 1000  # default 1 second
+    silence_duration_ms = 1000
+
+    await ctx.connect()
 
     for p in ctx.room.remote_participants.values():
         if p.metadata:
             try:
                 meta = json.loads(p.metadata)
-                if "voice" in meta:
-                    chosen_voice = meta["voice"]
-                if "mic_sensitivity" in meta:
-                    mic_sensitivity = meta["mic_sensitivity"]
-                if "silence_duration_ms" in meta:
-                    silence_duration_ms = int(meta["silence_duration_ms"])
+                chosen_voice = meta.get("voice", chosen_voice)
+                mic_sensitivity = meta.get("mic_sensitivity", mic_sensitivity)
+                silence_duration_ms = int(meta.get("silence_duration_ms", silence_duration_ms))
             except Exception:
                 pass
 
@@ -82,7 +84,10 @@ async def taylor_session(ctx: agents.JobContext):
     )
 
     await session.generate_reply(
-        instructions="Greet the user warmly, state your role as a communication coach, and ask what workplace scenario they would like to practice today."
+        instructions=(
+            "Greet the user warmly, state your role as a communication coach, "
+            "and ask what workplace scenario they would like to practice today."
+        )
     )
 
 

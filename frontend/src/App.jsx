@@ -191,7 +191,7 @@ function App() {
                     Microphone Sensitivity
                     <span className="tooltip-wrapper">
                       <span className="tooltip-icon">?</span>
-                      <span className="tooltip-bubble">High picks up your voice more easily — good for quiet rooms. Low filters background noise better — good for noisy environments.</span>
+                      <span className="tooltip-bubble">High = detects voice more easily. Low = filters background noise.</span>
                     </span>
                   </label>
                   <div style={{ ...toggleGroupStyle, marginTop: "8px" }}>
@@ -216,7 +216,7 @@ function App() {
                     Response Speed
                     <span className="tooltip-wrapper">
                       <span className="tooltip-icon">?</span>
-                      <span className="tooltip-bubble">How many seconds Taylor waits after you stop speaking before responding. Snappy = faster back-and-forth. Patient = gives you more time to pause mid-thought.</span>
+                      <span className="tooltip-bubble">Snappy = Taylor responds quickly. Patient = more pause time mid-thought.</span>
                     </span>
                   </label>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "8px" }}>

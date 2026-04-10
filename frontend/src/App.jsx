@@ -317,7 +317,15 @@ function App() {
               <span style={{ fontSize: '1.4rem' }}>📚</span> 
               {scenarioId === "custom" ? "Your Custom Scenario History" : `Past History: Scenario ${scenarioId}`}
             </h3>
-            <SessionHistory user={user} scenarioId={scenarioId} />
+            <SessionHistory 
+              user={user} 
+              scenarioId={scenarioId} 
+              onTargetedPracticeClick={(targetScenario) => {
+                setScenarioId("custom");
+                setCustomScenarioText(targetScenario);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }} 
+            />
           </div>
         )}
       </main>

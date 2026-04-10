@@ -26,12 +26,17 @@ class CoachTools(llm.Toolset):
         self.uid = uid
         self.scenario_id = scenario_id
 
-    @llm.function_tool(description="Save the final feedback summary and actionable tips at the end of the session.")
+    @llm.function_tool(description="Save the final feedback summary, actionable tips, MECE scores, and a targeted follow-up scenario at the end of the session.")
     async def save_session_feedback(
         self,
         summary: Annotated[str, "A 2-3 sentence summary of the scenario outcome and user's overall performance."],
         tip1: Annotated[str, "The first actionable constructive tip, following the sandwich feedback structure."],
         tip2: Annotated[str, "The second actionable constructive tip."],
+        nativeness_score: Annotated[int, "Score 0-100 indicating how natural and idiomatic their phrasing was. Priority focus."],
+        fluency_score: Annotated[int, "Score 0-100 indicating pacing, rhythm, and lack of hesitation."],
+        pronunciation_score: Annotated[int, "Score 0-100 indicating physical clarity of articulation and accent mechanics."],
+        pragmatic_score: Annotated[int, "Score 0-100 indicating how effectively they achieved the practical goal (e.g. diplomacy)."],
+        suggested_practice_scenario: Annotated[str, "A short, distinct follow-up roleplay prompt specifically designed to target and fix their weakest MECE score."]
     ):
         print(f"[{datetime.utcnow()}] Saving feedback for {self.uid} on scenario {self.scenario_id}")
         if self.uid and self.uid.strip():
@@ -40,6 +45,11 @@ class CoachTools(llm.Toolset):
                 "scenario_id": self.scenario_id,
                 "summary": summary,
                 "tips": [tip1, tip2],
+                "nativeness_score": nativeness_score,
+                "fluency_score": fluency_score,
+                "pronunciation_score": pronunciation_score,
+                "pragmatic_score": pragmatic_score,
+                "suggested_practice_scenario": suggested_practice_scenario,
                 "timestamp": datetime.utcnow()
             })
             print(f"[{datetime.utcnow()}] Feedback saved successfully to Firestore.")
@@ -110,15 +120,16 @@ The user has chosen to practice the following scenario:
 </scenario>
 
 <instructions>
-1. GREETING: Begin by warmly greeting the user and setting up the scenario. Let them know you're playing the counterpart in this scenario (e.g., the warehouse manager, the customer).
+1. GREETING: Begin by warmly greeting the user and setting up the scenario. Let them know you're playing the counterpart in this scenario.
 2. ROLEPLAY: Engage in the roleplay realistically. Subtly monitor their fluency, tone, and vocabulary.
-3. EVALUATION: When the conversation naturally concludes, or after a few turns, stop the roleplay and provide evaluation.
-4. "SANDWICH" FEEDBACK: Use the "Sandwich" structure. 
-    a. Point out what they did well (Positive). 
-    b. Give them 2 actionable, specific constructive tips for improvement (Constructive). 
-    c. End with encouraging words (Positive).
-5. TOOL CALLING: Right before the end of the session, CALL THE TOOL `save_session_feedback` with the summary and your 2 tips. This is mandatory so the user's progress is saved!
-6. REPLAY LOOP: After saving the feedback, ask the user if they want to repeat the scenario right away to practice applying your tips, or if they are done. If they want to repeat, start the roleplay again from the top, bearing in mind their previous errors to see if they improved.
+3. EVALUATION: When the context concludes, stop the roleplay. Silently calculate 4 MECE categories:
+   - Nativeness (Vocabulary, idiomatic expressions, natural phrasing) [PRIORITY 1]
+   - Fluency (Speed, rhythm, minimal hesitation)
+   - Pronunciation (Clear articulations, vowel sounds)
+   - Pragmatics (Was the communication goal met diplomatically and effectively?)
+4. "SANDWICH" FEEDBACK: Provide a bright, encouraging summary and 2 specific tips. Conclude by designing a heavily tailored `suggested_practice_scenario` isolating their weakest MECE domain.
+5. TOOL CALLING: Right before the end of the session, CALL THE TOOL `save_session_feedback` with the summary, tips, 4 numeric scores (0-100), and the follow-up scenario string.
+6. REPLAY LOOP: After saving, ask the user if they'd like to try their new targeted practice right now, or repeat the original scenario.
 </instructions>
 """
 

@@ -65,7 +65,22 @@ export function AuthUI() {
   );
 }
 
-export function SessionHistory({ user, scenarioId }) {
+function ScoreBar({ label, score, priority }) {
+  if (score === undefined) return null;
+  const color = priority ? "var(--accent-color)" : "rgba(255,255,255,0.7)";
+  // Simple check for data-theme='light' to ensure contrast if needed, but rgba works nicely.
+  return (
+    <div style={{display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', marginBottom: '4px'}}>
+      <span style={{width: '90px', color, fontWeight: priority ? 'bold' : 'normal'}}>{label}</span>
+      <div style={{flex: 1, background: 'rgba(128,128,128,0.2)', height: '6px', borderRadius: '3px', overflow: 'hidden'}}>
+        <div style={{width: `${score}%`, background: color, height: '100%'}} />
+      </div>
+      <span style={{width: '30px', textAlign: 'right', color, fontWeight: priority ? 'bold' : 'normal'}}>{score}</span>
+    </div>
+  );
+}
+
+export function SessionHistory({ user, scenarioId, onTargetedPracticeClick }) {
   const [sessions, setSessions] = useState([]);
 
   useEffect(() => {
@@ -96,6 +111,31 @@ export function SessionHistory({ user, scenarioId }) {
           <ul style={{margin: "4px 0", paddingLeft: "20px", fontSize: "0.85rem", color: 'var(--accent-color)'}}>
             {s.tips?.map((t, i) => <li key={i}>{t}</li>)}
           </ul>
+          
+          {(s.nativeness_score !== undefined) && (
+            <div style={{marginTop: '12px', padding: '10px', background: 'rgba(128,128,128,0.1)', borderRadius: '8px'}}>
+              <div style={{fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '8px', opacity: 0.8}}>MECE Performance Metrics</div>
+              <ScoreBar label="Nativeness" score={s.nativeness_score} priority />
+              <ScoreBar label="Fluency" score={s.fluency_score} />
+              <ScoreBar label="Pronunciation" score={s.pronunciation_score} />
+              <ScoreBar label="Pragmatics" score={s.pragmatic_score} />
+              
+              {s.suggested_practice_scenario && (
+                <div style={{marginTop: '12px'}}>
+                  <p style={{fontSize: '0.8rem', fontStyle: 'italic', marginBottom: '8px', opacity: 0.8}}>
+                    Target: "{s.suggested_practice_scenario}"
+                  </p>
+                  <button 
+                    className="btn-primary" 
+                    style={{width: '100%', padding: '8px', fontSize: '0.85rem'}}
+                    onClick={() => onTargetedPracticeClick && onTargetedPracticeClick(s.suggested_practice_scenario)}
+                  >
+                    🎯 Start Targeted Practice
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       ))}
     </div>

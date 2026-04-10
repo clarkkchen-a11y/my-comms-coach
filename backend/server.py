@@ -28,6 +28,7 @@ async def get_token(
     silence_duration_ms: int = 1000,
     uid: str = "",
     scenario_id: str = "1",
+    custom_scenario_text: str = "",
 ):
     """
     Generate a secure LiveKit connection token for the frontend
@@ -47,6 +48,7 @@ async def get_token(
         "silence_duration_ms": silence_duration_ms,
         "uid": uid,
         "scenario_id": scenario_id,
+        "custom_scenario_text": custom_scenario_text,
     })
 
     # Create the access token for the frontend participant

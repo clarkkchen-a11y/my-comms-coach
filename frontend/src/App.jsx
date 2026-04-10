@@ -18,6 +18,7 @@ function App() {
   const [wsUrl, setWsUrl] = useState('');
   const [selectedVoice, setSelectedVoice] = useState('Aoede');
   const [scenarioId, setScenarioId] = useState('1');
+  const [customScenarioText, setCustomScenarioText] = useState("");
   
   const [user, setUser] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
@@ -48,9 +49,10 @@ function App() {
       
       const roomName = `session-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
       const uidParam = user ? `&uid=${user.uid}` : '';
+      const customScenarioParam = scenarioId === 'custom' ? `&custom_scenario_text=${encodeURIComponent(customScenarioText)}` : '';
       
       const resp = await fetch(
-        `${backendUrl}/getToken?room=${roomName}&voice=${selectedVoice}&mic_sensitivity=${micSensitivity}&silence_duration_ms=${silenceDurationMs}&scenario_id=${scenarioId}${uidParam}`
+        `${backendUrl}/getToken?room=${roomName}&voice=${selectedVoice}&mic_sensitivity=${micSensitivity}&silence_duration_ms=${silenceDurationMs}&scenario_id=${scenarioId}${uidParam}${customScenarioParam}`
       );
       if (!resp.ok) {
         throw new Error('Failed to fetch token from backend');
@@ -133,7 +135,6 @@ function App() {
           ) : !sessionActive ? (
             <div className="onboarding-view">
               <span className="status-badge disconnected">● Ready to Practice</span>
-              <h1 className="title">Inspection Room</h1>
               
               <div style={panelStyle}>
                 <div>
@@ -151,7 +152,24 @@ function App() {
                     <option value="2" style={{color:"black"}}>Scenario 2: The Visual Inspection</option>
                     <option value="3" style={{color:"black"}}>Scenario 3: The Assembly Guide</option>
                     <option value="4" style={{color:"black"}}>Scenario 4: The Supplier Push-back</option>
+                    <option value="custom" style={{color:"black"}}>Create Custom Scenario...</option>
                   </select>
+                  
+                  {scenarioId === "custom" && (
+                    <div style={{ marginTop: "10px" }}>
+                      <textarea
+                        value={customScenarioText}
+                        onChange={(e) => setCustomScenarioText(e.target.value)}
+                        placeholder="E.g., I need to practice delivering negative feedback to a team member about their recent performance..."
+                        style={{
+                          width: "100%", height: "80px", padding: "10px", borderRadius: "8px",
+                          background: "rgba(255, 255, 255, 0.1)", color: "inherit",
+                          border: "1px solid rgba(255,255,255,0.2)", fontSize: "0.85rem",
+                          resize: "vertical"
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
                 
                 <div style={{background: "rgba(255,255,255,0.05)", padding: "12px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.08)"}}>

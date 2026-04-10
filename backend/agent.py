@@ -54,6 +54,7 @@ async def taylor_session(ctx: agents.JobContext):
     silence_duration_ms = 1000
     uid = ""
     scenario_id = "1"
+    custom_scenario_text = ""
 
     await ctx.connect(auto_subscribe=agents.AutoSubscribe.AUDIO_ONLY)
 
@@ -66,6 +67,7 @@ async def taylor_session(ctx: agents.JobContext):
                 silence_duration_ms = int(meta.get("silence_duration_ms", silence_duration_ms))
                 uid = meta.get("uid", uid)
                 scenario_id = str(meta.get("scenario_id", scenario_id))
+                custom_scenario_text = meta.get("custom_scenario_text", custom_scenario_text)
             except Exception:
                 pass
 
@@ -90,7 +92,10 @@ async def taylor_session(ctx: agents.JobContext):
         "4": "The Supplier Push-back: Telling a supplier that 10% of the sofas have 'stitching defects'. Diplomatic but firm technical English."
     }
     
-    current_scenario_text = scenario_contexts.get(scenario_id, scenario_contexts["1"])
+    if scenario_id == "custom" and custom_scenario_text:
+        current_scenario_text = f"Custom Scenario created by the user: '{custom_scenario_text}'"
+    else:
+        current_scenario_text = scenario_contexts.get(scenario_id, scenario_contexts["1"])
 
     system_instruction = f"""
 <persona>

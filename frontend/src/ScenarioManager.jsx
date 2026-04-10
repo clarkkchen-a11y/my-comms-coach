@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { db } from './firebase';
 import {
   collection, addDoc, updateDoc, deleteDoc, doc,
@@ -6,12 +6,11 @@ import {
   getDocs, setDoc,
 } from 'firebase/firestore';
 
-// The 4 built-in default scenarios — seeded into Firestore on first load
 const DEFAULT_SCENARIOS = [
-  { id: 'default-1', title: 'The Loading Dock Chitchat', description: 'Casual conversation with colleagues at the loading dock about weekend plans and the upcoming shipment.', isDefault: true },
-  { id: 'default-2', title: 'The Visual Inspection', description: 'Walking a new team member through a formal quality inspection process for a batch of sofas.', isDefault: true },
-  { id: 'default-3', title: 'The Assembly Guide', description: 'Explaining a complex step in the assembly guide to a confused colleague in simple, clear English.', isDefault: true },
-  { id: 'default-4', title: 'The Supplier Push-back', description: "Telling a supplier that 10% of the sofas have 'stitching defects'. Diplomatic but firm technical English.", isDefault: true },
+  { id: 'default-1', title: 'Loading Dock Chitchat', emoji: '🚚', description: 'Casual conversation with colleagues at the loading dock about weekend plans and the upcoming shipment.', isDefault: true },
+  { id: 'default-2', title: 'Visual Inspection', emoji: '🔍', description: 'Walking a new team member through a formal quality inspection process for a batch of sofas.', isDefault: true },
+  { id: 'default-3', title: 'Assembly Guide', emoji: '📋', description: 'Explaining a complex step in the assembly guide to a confused colleague in simple, clear English.', isDefault: true },
+  { id: 'default-4', title: 'Supplier Push-back', emoji: '💼', description: "Telling a supplier that 10% of the sofas have 'stitching defects'. Diplomatic but firm technical English.", isDefault: true },
 ];
 
 const SCENARIO_ID_MAP = {
@@ -24,11 +23,11 @@ const SCENARIO_ID_MAP = {
 export async function seedDefaultScenarios(uid) {
   const ref = collection(db, 'users', uid, 'scenarios');
   const snap = await getDocs(ref);
-  // Only seed if no scenarios exist yet
   if (snap.empty) {
     for (const s of DEFAULT_SCENARIOS) {
       await setDoc(doc(db, 'users', uid, 'scenarios', s.id), {
         title: s.title,
+        emoji: s.emoji || '💬',
         description: s.description,
         isDefault: s.isDefault,
         createdAt: serverTimestamp(),
@@ -39,7 +38,6 @@ export async function seedDefaultScenarios(uid) {
 
 export function useScenarios(uid) {
   const [scenarios, setScenarios] = useState([]);
-
   useEffect(() => {
     if (!uid) return;
     const q = query(collection(db, 'users', uid, 'scenarios'), orderBy('createdAt', 'asc'));
@@ -50,49 +48,59 @@ export function useScenarios(uid) {
     });
     return unsub;
   }, [uid]);
-
   return scenarios;
 }
 
-// Map Firestore scenario to the backend scenario_id value
 export function getBackendScenarioId(scenario) {
-  if (scenario.isDefault) {
+  if (scenario?.isDefault) {
     return SCENARIO_ID_MAP[scenario.firestoreId] || 'custom';
   }
   return 'custom';
 }
 
 export function getBackendCustomText(scenario) {
-  if (!scenario.isDefault) {
+  if (!scenario?.isDefault) {
     return `${scenario.title}: ${scenario.description}`;
   }
   return '';
 }
 
+// ── Scenario Chip Selector + Manage Drawer ────────────────────────────
 export function ScenarioManager({ uid, selectedFsId, onSelect }) {
   const scenarios = useScenarios(uid);
+  const [manageOpen, setManageOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
   const [editDesc, setEditDesc] = useState('');
+  const [editEmoji, setEditEmoji] = useState('💬');
   const [isAdding, setIsAdding] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newDesc, setNewDesc] = useState('');
+  const [newEmoji, setNewEmoji] = useState('💬');
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const scrollRef = useRef(null);
+
+  const selectedScenario = scenarios.find(s => s.firestoreId === selectedFsId);
 
   const startEdit = (s) => {
     setEditingId(s.firestoreId);
     setEditTitle(s.title);
     setEditDesc(s.description);
+    setEditEmoji(s.emoji || '💬');
+    setConfirmDeleteId(null);
   };
 
-  const saveEdit = async (firestoreId) => {
+  const saveEdit = async (id) => {
     if (!editTitle.trim()) return;
-    await updateDoc(doc(db, 'users', uid, 'scenarios', firestoreId), {
+    await updateDoc(doc(db, 'users', uid, 'scenarios', id), {
       title: editTitle.trim(),
       description: editDesc.trim(),
+      emoji: editEmoji,
     });
     setEditingId(null);
   };
+
+  const cancelEdit = () => setEditingId(null);
 
   const restoreDefault = async (s) => {
     const original = DEFAULT_SCENARIOS.find(d => d.id === s.firestoreId);
@@ -100,129 +108,174 @@ export function ScenarioManager({ uid, selectedFsId, onSelect }) {
     await updateDoc(doc(db, 'users', uid, 'scenarios', s.firestoreId), {
       title: original.title,
       description: original.description,
+      emoji: original.emoji,
     });
     setEditingId(null);
   };
 
-  const deleteScenario = async (firestoreId) => {
-    await deleteDoc(doc(db, 'users', uid, 'scenarios', firestoreId));
+  const deleteScenario = async (id) => {
+    await deleteDoc(doc(db, 'users', uid, 'scenarios', id));
     setConfirmDeleteId(null);
-    // If deleted scenario was selected, fall back to first scenario
+    if (selectedFsId === id && scenarios.length > 1) {
+      const next = scenarios.find(s => s.firestoreId !== id);
+      if (next) onSelect(next.firestoreId);
+    }
   };
 
   const addScenario = async () => {
     if (!newTitle.trim()) return;
-    const docRef = await addDoc(collection(db, 'users', uid, 'scenarios'), {
+    const ref = await addDoc(collection(db, 'users', uid, 'scenarios'), {
       title: newTitle.trim(),
       description: newDesc.trim(),
+      emoji: newEmoji,
       isDefault: false,
       createdAt: serverTimestamp(),
     });
     setIsAdding(false);
     setNewTitle('');
     setNewDesc('');
-    onSelect(docRef.id);
+    setNewEmoji('💬');
+    onSelect(ref.id);
   };
 
   const inputStyle = {
     width: '100%', padding: '8px 10px', borderRadius: '6px', fontSize: '0.85rem',
     background: 'var(--input-bg)', color: 'inherit', border: '1px solid var(--input-border)',
-    boxSizing: 'border-box', marginBottom: '6px',
+    boxSizing: 'border-box', marginBottom: '6px', fontFamily: 'inherit',
   };
 
   return (
-    <div className="scenario-manager">
-      <div className="scenario-manager-header">
-        <span>📋 My Scenarios</span>
-        <button className="scenario-add-btn" onClick={() => setIsAdding(true)} title="Add new scenario">
-          +
+    <div className="sm-root">
+      {/* ── Label row ── */}
+      <div className="sm-label-row">
+        <span className="sm-label">Scenario</span>
+        <button
+          className={`sm-manage-btn ${manageOpen ? 'sm-manage-btn-active' : ''}`}
+          onClick={() => { setManageOpen(p => !p); setEditingId(null); setIsAdding(false); }}
+        >
+          {manageOpen ? '✕ Close' : '⚙ Manage'}
         </button>
       </div>
 
-      {isAdding && (
-        <div className="scenario-card scenario-card-new">
-          <input
-            style={inputStyle}
-            placeholder="Scenario title (e.g., Performance Review)"
-            value={newTitle}
-            onChange={e => setNewTitle(e.target.value)}
-            autoFocus
-          />
-          <textarea
-            style={{ ...inputStyle, height: '70px', resize: 'vertical' }}
-            placeholder="Describe the scenario context..."
-            value={newDesc}
-            onChange={e => setNewDesc(e.target.value)}
-          />
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button className="btn-primary" style={{ flex: 1, padding: '6px', fontSize: '0.8rem' }} onClick={addScenario}>
-              Save
-            </button>
-            <button className="scenario-btn-ghost" onClick={() => { setIsAdding(false); setNewTitle(''); setNewDesc(''); }}>
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
-      <div className="scenario-list">
+      {/* ── Chip Row ── */}
+      <div className="sm-chips-wrapper" ref={scrollRef}>
         {scenarios.map(s => (
-          <div
+          <button
             key={s.firestoreId}
-            className={`scenario-card ${selectedFsId === s.firestoreId ? 'scenario-card-selected' : ''}`}
-            onClick={() => editingId !== s.firestoreId && onSelect(s.firestoreId)}
+            className={`sm-chip ${selectedFsId === s.firestoreId ? 'sm-chip-selected' : ''}`}
+            onClick={() => onSelect(s.firestoreId)}
+            title={s.description}
           >
-            {editingId === s.firestoreId ? (
-              <div onClick={e => e.stopPropagation()}>
-                <input
-                  style={inputStyle}
-                  value={editTitle}
-                  onChange={e => setEditTitle(e.target.value)}
-                  autoFocus
-                />
-                <textarea
-                  style={{ ...inputStyle, height: '60px', resize: 'vertical' }}
-                  value={editDesc}
-                  onChange={e => setEditDesc(e.target.value)}
-                />
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  <button className="btn-primary" style={{ flex: 1, padding: '5px', fontSize: '0.78rem' }} onClick={() => saveEdit(s.firestoreId)}>
-                    ✓ Save
-                  </button>
-                  {s.isDefault && (
-                    <button className="scenario-btn-ghost" style={{ fontSize: '0.78rem' }} onClick={() => restoreDefault(s)}>
-                      ↩ Restore
-                    </button>
-                  )}
-                  <button className="scenario-btn-ghost" style={{ fontSize: '0.78rem' }} onClick={() => setEditingId(null)}>
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="scenario-card-title">
-                  {s.isDefault && <span className="scenario-default-badge">default</span>}
-                  {s.title}
-                </div>
-                <div className="scenario-card-desc">{s.description}</div>
-                <div className="scenario-card-actions" onClick={e => e.stopPropagation()}>
-                  <button className="scenario-icon-btn" title="Edit" onClick={() => startEdit(s)}>✏️</button>
-                  {confirmDeleteId === s.firestoreId ? (
-                    <>
-                      <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>Delete?</span>
-                      <button className="scenario-icon-btn scenario-btn-danger" onClick={() => deleteScenario(s.firestoreId)}>Yes</button>
-                      <button className="scenario-icon-btn" onClick={() => setConfirmDeleteId(null)}>No</button>
-                    </>
-                  ) : (
-                    <button className="scenario-icon-btn scenario-btn-danger" title="Delete" onClick={() => setConfirmDeleteId(s.firestoreId)}>🗑️</button>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
+            <span>{s.emoji || '💬'}</span>
+            <span className="sm-chip-label">{s.title}</span>
+          </button>
         ))}
       </div>
+
+      {/* ── Selected description (compact hint) ── */}
+      {selectedScenario && (
+        <p className="sm-selected-desc">{selectedScenario.description}</p>
+      )}
+
+      {/* ── Manage Drawer ── */}
+      {manageOpen && (
+        <div className="sm-drawer">
+          <div className="sm-drawer-list">
+            {scenarios.map(s => (
+              <div key={s.firestoreId} className="sm-drawer-row">
+                {editingId === s.firestoreId ? (
+                  <div className="sm-edit-form">
+                    <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
+                      <input
+                        style={{ ...inputStyle, width: '52px', textAlign: 'center', marginBottom: 0, fontSize: '1.2rem', padding: '6px' }}
+                        value={editEmoji}
+                        onChange={e => setEditEmoji(e.target.value)}
+                        maxLength={2}
+                        title="Emoji"
+                      />
+                      <input
+                        style={{ ...inputStyle, flex: 1, marginBottom: 0 }}
+                        value={editTitle}
+                        onChange={e => setEditTitle(e.target.value)}
+                        placeholder="Title"
+                        autoFocus
+                      />
+                    </div>
+                    <textarea
+                      style={{ ...inputStyle, height: '60px', resize: 'vertical' }}
+                      value={editDesc}
+                      onChange={e => setEditDesc(e.target.value)}
+                      placeholder="Description"
+                    />
+                    <div className="sm-edit-actions">
+                      <button className="btn-primary sm-btn-sm" onClick={() => saveEdit(s.firestoreId)}>Save</button>
+                      {s.isDefault && (
+                        <button className="sm-ghost-btn sm-btn-sm" onClick={() => restoreDefault(s)}>↩ Restore</button>
+                      )}
+                      <button className="sm-ghost-btn sm-btn-sm" onClick={cancelEdit}>Cancel</button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <span className="sm-row-emoji">{s.emoji || '💬'}</span>
+                    <span className="sm-row-title">
+                      {s.title}
+                      {s.isDefault && <span className="sm-default-pill">default</span>}
+                    </span>
+                    <div className="sm-row-actions">
+                      <button className="sm-icon-btn" onClick={() => startEdit(s)} title="Edit">✏️</button>
+                      {confirmDeleteId === s.firestoreId ? (
+                        <>
+                          <button className="sm-icon-btn sm-danger-btn" onClick={() => deleteScenario(s.firestoreId)}>Yes, delete</button>
+                          <button className="sm-icon-btn" onClick={() => setConfirmDeleteId(null)}>No</button>
+                        </>
+                      ) : (
+                        <button className="sm-icon-btn sm-danger-btn" onClick={() => setConfirmDeleteId(s.firestoreId)} title="Delete">🗑️</button>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Add new */}
+          {isAdding ? (
+            <div className="sm-edit-form" style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--input-border)' }}>
+              <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
+                <input
+                  style={{ ...inputStyle, width: '52px', textAlign: 'center', marginBottom: 0, fontSize: '1.2rem', padding: '6px' }}
+                  value={newEmoji}
+                  onChange={e => setNewEmoji(e.target.value)}
+                  maxLength={2}
+                  title="Emoji"
+                />
+                <input
+                  style={{ ...inputStyle, flex: 1, marginBottom: 0 }}
+                  value={newTitle}
+                  onChange={e => setNewTitle(e.target.value)}
+                  placeholder="Scenario title"
+                  autoFocus
+                />
+              </div>
+              <textarea
+                style={{ ...inputStyle, height: '60px', resize: 'vertical' }}
+                value={newDesc}
+                onChange={e => setNewDesc(e.target.value)}
+                placeholder="Describe the scenario context..."
+              />
+              <div className="sm-edit-actions">
+                <button className="btn-primary sm-btn-sm" onClick={addScenario}>Add Scenario</button>
+                <button className="sm-ghost-btn sm-btn-sm" onClick={() => { setIsAdding(false); setNewTitle(''); setNewDesc(''); }}>Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <button className="sm-add-row-btn" onClick={() => { setIsAdding(true); setEditingId(null); }}>
+              + Add custom scenario
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

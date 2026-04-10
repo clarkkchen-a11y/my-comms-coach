@@ -1,6 +1,5 @@
 livekit-agents==1.5.2
 livekit-plugins-google==1.5.2
-livekit-plugins-silero==1.5.2
 firebase-admin
 fastapi
 uvicorn

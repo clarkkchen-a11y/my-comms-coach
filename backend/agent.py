@@ -4,9 +4,11 @@ load_dotenv()
 
 from livekit import agents
 from livekit.agents import AgentServer, AgentSession, Agent
-from livekit.plugins import google, silero
+from livekit.plugins import google
+from livekit.plugins.google.realtime.api_proto import types
 import firebase_admin
 from firebase_admin import credentials, firestore
+import json
 
 # ----- FIREBASE INIT -----
 cred = credentials.Certificate("my-comms-coach-firebase-adminsdk-fbsvc-5c191af4c1.json")
@@ -30,32 +32,48 @@ class Taylor(Agent):
 server = AgentServer()
 
 
-# No agent_name = automatic dispatch (agent joins every room automatically)
 @server.rtc_session
 async def taylor_session(ctx: agents.JobContext):
-    # Parse requested voice and VAD parameters from participant metadata
+    # Parse requested voice and sensitivity settings from participant metadata
     chosen_voice = "Aoede"
-    vad_kwargs = {}
-    import json
+    # mic_sensitivity: "high" = picks up voice easily, "low" = ignores background noise
+    mic_sensitivity = "high"
+    # silence_duration_ms: ms of silence before AI considers you done speaking
+    silence_duration_ms = 1000  # default 1 second
+
     for p in ctx.room.remote_participants.values():
         if p.metadata:
             try:
                 meta = json.loads(p.metadata)
                 if "voice" in meta:
                     chosen_voice = meta["voice"]
-                if "min_speech_duration" in meta:
-                    vad_kwargs["min_speech_duration"] = float(meta["min_speech_duration"])
-                if "min_silence_duration" in meta:
-                    vad_kwargs["min_silence_duration"] = float(meta["min_silence_duration"])
-            except Exception as e:
+                if "mic_sensitivity" in meta:
+                    mic_sensitivity = meta["mic_sensitivity"]
+                if "silence_duration_ms" in meta:
+                    silence_duration_ms = int(meta["silence_duration_ms"])
+            except Exception:
                 pass
+
+    # Map sensitivity string to API enum
+    start_sensitivity = (
+        types.StartSensitivity.START_SENSITIVITY_HIGH
+        if mic_sensitivity == "high"
+        else types.StartSensitivity.START_SENSITIVITY_LOW
+    )
+
+    realtime_input_config = types.RealtimeInputConfig(
+        automatic_activity_detection=types.AutomaticActivityDetection(
+            start_of_speech_sensitivity=start_sensitivity,
+            silence_duration_ms=silence_duration_ms,
+        )
+    )
 
     session = AgentSession(
         llm=google.realtime.RealtimeModel(
             model="gemini-2.5-flash-native-audio-latest",
             voice=chosen_voice,
+            realtime_input_config=realtime_input_config,
         ),
-        vad=silero.VAD.load(**vad_kwargs),
     )
 
     await session.start(

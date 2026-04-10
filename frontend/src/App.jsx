@@ -11,32 +11,33 @@ import '@livekit/components-styles';
 function App() {
   const [theme, setTheme] = useState('dark');
   const [sessionActive, setSessionActive] = useState(false);
-  const [token, setToken] = useState(''); // Will be fetched from your backend
-  const [wsUrl, setWsUrl] = useState(''); // E.g., wss://my-comms-coach.livekit.cloud
-  const [selectedVoice, setSelectedVoice] = useState('Aoede'); // Default Gemini Voice
-  
-  // VAD Parameters
-  const [minSpeechDuration, setMinSpeechDuration] = useState(0.05);
-  const [minSilenceDuration, setMinSilenceDuration] = useState(0.55);
+  const [token, setToken] = useState('');
+  const [wsUrl, setWsUrl] = useState('');
+  const [selectedVoice, setSelectedVoice] = useState('Aoede');
 
-  // Toggle light/dark theme
+  // mic_sensitivity: "high" = picks up voice easily, "low" = needs louder/clearer speech
+  const [micSensitivity, setMicSensitivity] = useState('high');
+  // silence_duration_ms: how many ms of silence before Taylor responds
+  const [silenceDurationMs, setSilenceDurationMs] = useState(1000);
+
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
     document.documentElement.setAttribute('data-theme', newTheme);
   };
 
-  // On mount, set initial theme
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, []);
 
   const startSession = async () => {
     try {
-      const backendUrl = import.meta.env.PROD 
+      const backendUrl = import.meta.env.PROD
         ? "https://my-comms-coach-backend-161209776732.us-central1.run.app"
         : "http://localhost:8000";
-      const resp = await fetch(`${backendUrl}/getToken?voice=${selectedVoice}&min_speech_duration=${minSpeechDuration}&min_silence_duration=${minSilenceDuration}`);
+      const resp = await fetch(
+        `${backendUrl}/getToken?voice=${selectedVoice}&mic_sensitivity=${micSensitivity}&silence_duration_ms=${silenceDurationMs}`
+      );
       if (!resp.ok) {
         throw new Error('Failed to fetch token from backend');
       }
@@ -53,6 +54,57 @@ function App() {
   const onDisconnected = () => {
     setSessionActive(false);
   };
+
+  // Human-readable response speed label
+  const speedLabel =
+    silenceDurationMs <= 400 ? "Very Snappy" :
+    silenceDurationMs <= 700 ? "Snappy" :
+    silenceDurationMs <= 1200 ? "Balanced" :
+    silenceDurationMs <= 1700 ? "Patient" :
+    "Very Patient";
+
+  const panelStyle = {
+    marginBottom: "24px",
+    width: "100%",
+    maxWidth: "320px",
+    padding: "16px 20px",
+    background: "rgba(255,255,255,0.05)",
+    borderRadius: "12px",
+    border: "1px solid rgba(255,255,255,0.08)",
+  };
+
+  const labelStyle = {
+    fontSize: "0.85rem",
+    color: "var(--text-secondary)",
+    marginBottom: "6px",
+    display: "block",
+  };
+
+  const hintStyle = {
+    fontSize: "0.75rem",
+    opacity: 0.55,
+    marginTop: "2px",
+    display: "block",
+  };
+
+  const toggleGroupStyle = {
+    display: "flex",
+    borderRadius: "8px",
+    overflow: "hidden",
+    border: "1px solid rgba(255,255,255,0.15)",
+  };
+
+  const toggleBtnStyle = (active) => ({
+    flex: 1,
+    padding: "8px 0",
+    background: active ? "var(--accent-color)" : "transparent",
+    color: active ? "white" : "var(--text-secondary)",
+    border: "none",
+    cursor: "pointer",
+    fontSize: "0.85rem",
+    fontWeight: active ? 600 : 400,
+    transition: "all 0.2s",
+  });
 
   return (
     <>
@@ -73,12 +125,13 @@ function App() {
                 Communication Scenario Practice.<br />
                 Your AI coach, Taylor, is ready to chat.
               </p>
-              
+
+              {/* Voice Selection */}
               <div style={{ marginBottom: "20px", display: "flex", flexDirection: "column", gap: "8px", alignItems: "center" }}>
                 <label style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>Choose Taylor's Voice:</label>
                 <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                  <select 
-                    value={selectedVoice} 
+                  <select
+                    value={selectedVoice}
                     onChange={(e) => setSelectedVoice(e.target.value)}
                     style={{
                       padding: "8px 16px",
@@ -96,8 +149,8 @@ function App() {
                     <option value="Kore" style={{color: "black"}}>Warm Female</option>
                     <option value="Puck" style={{color: "black"}}>Energetic Male</option>
                   </select>
-                  
-                  <button 
+
+                  <button
                     onClick={() => {
                       const audio = new Audio(`/voices/${selectedVoice}.wav`);
                       audio.play().catch(e => console.error("Error playing audio", e));
@@ -120,39 +173,67 @@ function App() {
                 </div>
               </div>
 
-              <div style={{ marginBottom: "20px", width: "100%", maxWidth: "300px", padding: "16px", background: "rgba(255,255,255,0.05)", borderRadius: "8px" }}>
-                <h3 style={{ fontSize: "1rem", marginBottom: "12px", borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: "8px" }}>Tuning (VAD)</h3>
-                
-                <div style={{ marginBottom: "12px", display: "flex", flexDirection: "column", gap: "4px" }}>
-                  <label style={{ fontSize: "0.85rem", color: "var(--text-secondary)", display: "flex", justifyContent: "space-between" }}>
-                    <span>Speech Threshold</span>
-                    <span>{minSpeechDuration}s</span>
+              {/* Conversation Settings — static, not floating */}
+              <div style={panelStyle}>
+                <h3 style={{
+                  fontSize: "0.95rem",
+                  fontWeight: 600,
+                  margin: "0 0 16px 0",
+                  paddingBottom: "10px",
+                  borderBottom: "1px solid rgba(255,255,255,0.1)"
+                }}>
+                  Conversation Settings
+                </h3>
+
+                {/* Mic Sensitivity */}
+                <div style={{ marginBottom: "16px" }}>
+                  <label style={labelStyle}>
+                    Microphone Sensitivity
                   </label>
-                  <input 
-                    type="range" 
-                    min="0.01" 
-                    max="1.0" 
-                    step="0.01" 
-                    value={minSpeechDuration} 
-                    onChange={(e) => setMinSpeechDuration(parseFloat(e.target.value))}
-                    title="Minimum duration of speech to start a chunk"
-                  />
+                  <span style={hintStyle}>
+                    High = picks up your voice easily. Low = filters background noise better.
+                  </span>
+                  <div style={{ ...toggleGroupStyle, marginTop: "8px" }}>
+                    <button
+                      style={toggleBtnStyle(micSensitivity === 'high')}
+                      onClick={() => setMicSensitivity('high')}
+                    >
+                      High
+                    </button>
+                    <button
+                      style={toggleBtnStyle(micSensitivity === 'low')}
+                      onClick={() => setMicSensitivity('low')}
+                    >
+                      Low
+                    </button>
+                  </div>
                 </div>
-                
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                  <label style={{ fontSize: "0.85rem", color: "var(--text-secondary)", display: "flex", justifyContent: "space-between" }}>
-                    <span>Silence Patience (Turn-Taking)</span>
-                    <span>{minSilenceDuration}s</span>
+
+                {/* Response Patience */}
+                <div>
+                  <label style={labelStyle}>
+                    Response Speed
                   </label>
-                  <input 
-                    type="range" 
-                    min="0.1" 
-                    max="2.0" 
-                    step="0.05" 
-                    value={minSilenceDuration} 
-                    onChange={(e) => setMinSilenceDuration(parseFloat(e.target.value))}
-                    title="How long to wait after you stop speaking before the AI responds"
-                  />
+                  <span style={hintStyle}>
+                    How long Taylor waits after you stop speaking before responding.
+                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "8px" }}>
+                    <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)", whiteSpace: "nowrap" }}>Snappy</span>
+                    <input
+                      type="range"
+                      min="200"
+                      max="2000"
+                      step="100"
+                      value={silenceDurationMs}
+                      onChange={(e) => setSilenceDurationMs(parseInt(e.target.value))}
+                      style={{ flex: 1 }}
+                      title="Lower = Taylor responds faster. Higher = Taylor gives you more time to pause mid-thought."
+                    />
+                    <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)", whiteSpace: "nowrap" }}>Patient</span>
+                  </div>
+                  <div style={{ textAlign: "center", fontSize: "0.8rem", fontWeight: 600, color: "var(--accent-color)", marginTop: "4px" }}>
+                    {speedLabel} ({(silenceDurationMs / 1000).toFixed(1)}s pause)
+                  </div>
                 </div>
               </div>
 
@@ -170,12 +251,12 @@ function App() {
               onDisconnected={onDisconnected}
             >
               <RoomAudioRenderer />
-              
+
               <span className="status-badge connected">● Active Session</span>
               <h1 className="title">Chatting with Taylor...</h1>
-              
+
               <ActiveSessionView />
-              
+
               <VoiceAssistantControlBar />
             </LiveKitRoom>
           )}
@@ -185,18 +266,11 @@ function App() {
   );
 }
 
-// Inner component to access the voice assistant state and visualize it
 function ActiveSessionView() {
   const { state, audioTrack } = useVoiceAssistant();
-
   return (
     <div className="visualizer-wrapper">
-      {/* The BarVisualizer uniquely visualizes the AI's audio return track */}
-      <BarVisualizer
-        state={state}
-        barCount={7}
-        trackRef={audioTrack}
-      />
+      <BarVisualizer state={state} barCount={7} trackRef={audioTrack} />
     </div>
   );
 }

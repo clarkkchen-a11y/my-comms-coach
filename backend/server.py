@@ -19,7 +19,13 @@ app.add_middleware(
 )
 
 @app.get("/getToken")
-async def get_token(room: str = "my-comms-room", participantName: str = "qa_user", voice: str = "Aoede", min_speech_duration: float = 0.05, min_silence_duration: float = 0.55):
+async def get_token(
+    room: str = "my-comms-room",
+    participantName: str = "qa_user",
+    voice: str = "Aoede",
+    mic_sensitivity: str = "high",       # "high" = picks up voice easily, "low" = ignores background noise
+    silence_duration_ms: int = 1000,     # ms of silence before AI considers you done speaking
+):
     """
     Generate a secure LiveKit connection token for the frontend.
     """
@@ -29,8 +35,8 @@ async def get_token(room: str = "my-comms-room", participantName: str = "qa_user
     import json
     metadata = json.dumps({
         "voice": voice,
-        "min_speech_duration": min_speech_duration,
-        "min_silence_duration": min_silence_duration
+        "mic_sensitivity": mic_sensitivity,
+        "silence_duration_ms": silence_duration_ms,
     })
 
     # Create the access token

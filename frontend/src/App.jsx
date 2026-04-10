@@ -7,7 +7,7 @@ import {
   useVoiceAssistant,
 } from '@livekit/components-react';
 import '@livekit/components-styles';
-import { auth, db } from './firebase';
+import { auth } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { AuthUI, SessionHistory } from './AuthAndHistory';
 
@@ -39,7 +39,7 @@ function App() {
       setLoadingAuth(false);
     });
     return unsubscribe;
-  }, []);
+  }, [theme]);
 
   const startSession = async () => {
     try {

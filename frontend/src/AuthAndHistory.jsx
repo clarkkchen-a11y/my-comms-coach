@@ -4,13 +4,11 @@ import {
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   GoogleAuthProvider, 
-  signInWithPopup, 
-  onAuthStateChanged, 
-  signOut 
+  signInWithPopup
 } from "firebase/auth";
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 
-export function AuthUI({ setUser }) {
+export function AuthUI() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLogin, setIsLogin] = useState(true);

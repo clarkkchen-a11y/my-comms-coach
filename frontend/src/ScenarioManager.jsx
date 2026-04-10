@@ -157,8 +157,8 @@ export function ScenarioManager({ uid, selectedFsId, onSelect }) {
         </button>
       </div>
 
-      {/* ── Chip Row ── */}
-      <div className="sm-chips-wrapper" ref={scrollRef}>
+      {/* ── Chip Grid ── */}
+      <div className="sm-chips-wrapper">
         {scenarios.map(s => (
           <button
             key={s.firestoreId}
@@ -166,7 +166,7 @@ export function ScenarioManager({ uid, selectedFsId, onSelect }) {
             onClick={() => onSelect(s.firestoreId)}
             title={s.description}
           >
-            <span>{s.emoji || '💬'}</span>
+            <span className="sm-chip-emoji">{s.emoji || '💬'}</span>
             <span className="sm-chip-label">{s.title}</span>
           </button>
         ))}

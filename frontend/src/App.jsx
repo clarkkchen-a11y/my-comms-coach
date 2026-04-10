@@ -111,7 +111,7 @@ function App() {
 
   const panelStyle = {
     marginBottom: "20px", display: "flex", flexDirection: "column", gap: "16px",
-    width: "100%", maxWidth: "320px", margin: "0 auto 24px", boxSizing: "border-box"
+    width: "100%", maxWidth: "420px", margin: "0 auto 24px", boxSizing: "border-box"
   };
 
   const labelStyle = {

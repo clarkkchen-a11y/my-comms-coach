@@ -74,7 +74,7 @@ async def taylor_session(ctx: agents.JobContext):
 
     session = AgentSession(
         llm=google.realtime.RealtimeModel(
-            model="gemini-2.5-flash-native-audio-latest",
+            model="gemini-2.5-flash-native-audio-preview-12-2025",
             voice=chosen_voice,
             realtime_input_config=realtime_input_config,
         ),

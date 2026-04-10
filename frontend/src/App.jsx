@@ -67,6 +67,8 @@ function App() {
 
   const panelStyle = {
     marginBottom: "24px",
+    marginLeft: "auto",
+    marginRight: "auto",
     width: "100%",
     maxWidth: "320px",
     padding: "16px 20px",

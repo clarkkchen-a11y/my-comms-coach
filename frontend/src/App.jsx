@@ -187,12 +187,13 @@ function App() {
 
                 {/* Mic Sensitivity */}
                 <div style={{ marginBottom: "16px" }}>
-                  <label style={labelStyle}>
+                  <label style={{ ...labelStyle, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     Microphone Sensitivity
+                    <span className="tooltip-wrapper">
+                      <span className="tooltip-icon">?</span>
+                      <span className="tooltip-bubble">High picks up your voice more easily — good for quiet rooms. Low filters background noise better — good for noisy environments.</span>
+                    </span>
                   </label>
-                  <span style={hintStyle}>
-                    High = picks up your voice easily. Low = filters background noise better.
-                  </span>
                   <div style={{ ...toggleGroupStyle, marginTop: "8px" }}>
                     <button
                       style={toggleBtnStyle(micSensitivity === 'high')}
@@ -211,12 +212,13 @@ function App() {
 
                 {/* Response Patience */}
                 <div>
-                  <label style={labelStyle}>
+                  <label style={{ ...labelStyle, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     Response Speed
+                    <span className="tooltip-wrapper">
+                      <span className="tooltip-icon">?</span>
+                      <span className="tooltip-bubble">How many seconds Taylor waits after you stop speaking before responding. Snappy = faster back-and-forth. Patient = gives you more time to pause mid-thought.</span>
+                    </span>
                   </label>
-                  <span style={hintStyle}>
-                    How long Taylor waits after you stop speaking before responding.
-                  </span>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "8px" }}>
                     <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)", whiteSpace: "nowrap" }}>Snappy</span>
                     <input

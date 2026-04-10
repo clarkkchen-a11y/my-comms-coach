@@ -311,7 +311,7 @@ function App() {
           )}
         </div>
 
-        {!connected && token === "" && user && (
+        {token === "" && user && (
           <div className="glass-panel" style={{ width: "100%", maxWidth: "600px", marginTop: "20px", padding: "2rem" }}>
             <h3 style={{fontSize: "1.1rem", margin: "0 0 16px 0", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px"}}>
               <span style={{ fontSize: '1.4rem' }}>📚</span> 

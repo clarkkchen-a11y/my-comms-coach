@@ -29,6 +29,7 @@ async def get_token(
     uid: str = "",
     scenario_id: str = "1",
     custom_scenario_text: str = "",
+    is_targeted_practice: str = "false",
 ):
     """
     Generate a secure LiveKit connection token for the frontend
@@ -49,6 +50,7 @@ async def get_token(
         "uid": uid,
         "scenario_id": scenario_id,
         "custom_scenario_text": custom_scenario_text,
+        "is_targeted_practice": is_targeted_practice,
     })
 
     # Create the access token for the frontend participant

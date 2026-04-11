@@ -90,19 +90,39 @@ async def taylor_session(ctx: agents.JobContext):
 
     await ctx.connect(auto_subscribe=agents.AutoSubscribe.AUDIO_ONLY)
 
-    for p in ctx.room.remote_participants.values():
-        if p.metadata:
-            try:
-                meta = json.loads(p.metadata)
-                chosen_voice = meta.get("voice", chosen_voice)
-                mic_sensitivity = meta.get("mic_sensitivity", mic_sensitivity)
-                silence_duration_ms = int(meta.get("silence_duration_ms", silence_duration_ms))
-                uid = meta.get("uid", uid)
-                scenario_id = str(meta.get("scenario_id", scenario_id))
-                custom_scenario_text = meta.get("custom_scenario_text", custom_scenario_text)
-                is_targeted_practice = str(meta.get("is_targeted_practice", "false")).lower() == "true"
-            except Exception:
-                pass
+    # ── Read settings from dispatch metadata (always available) ──────────
+    # The server encodes all settings into the dispatch's metadata field.
+    # We prefer this over participant metadata to avoid race conditions
+    # where the agent might connect before the user participant is visible.
+    def _parse_meta(raw: str):
+        nonlocal chosen_voice, mic_sensitivity, silence_duration_ms
+        nonlocal uid, scenario_id, custom_scenario_text, is_targeted_practice
+        try:
+            meta = json.loads(raw)
+            chosen_voice = meta.get("voice", chosen_voice)
+            mic_sensitivity = meta.get("mic_sensitivity", mic_sensitivity)
+            silence_duration_ms = int(meta.get("silence_duration_ms", silence_duration_ms))
+            uid = meta.get("uid", uid)
+            scenario_id = str(meta.get("scenario_id", scenario_id))
+            custom_scenario_text = meta.get("custom_scenario_text", custom_scenario_text)
+            is_targeted_practice = str(meta.get("is_targeted_practice", "false")).lower() == "true"
+            return True
+        except Exception:
+            return False
+
+    # Primary: dispatch metadata (sent by server when agent is dispatched)
+    parsed = False
+    if ctx.job and ctx.job.metadata:
+        parsed = _parse_meta(ctx.job.metadata)
+        print(f"[agent] Parsed metadata from dispatch: voice={chosen_voice}, scenario={scenario_id}")
+
+    # Fallback: participant metadata (legacy path / safety net)
+    if not parsed:
+        for p in ctx.room.remote_participants.values():
+            if p.metadata:
+                if _parse_meta(p.metadata):
+                    print(f"[agent] Parsed metadata from participant: voice={chosen_voice}, scenario={scenario_id}")
+                    break
 
     start_sensitivity = (
         types.StartSensitivity.START_SENSITIVITY_HIGH

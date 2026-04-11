@@ -100,6 +100,8 @@ function App() {
 
   const onDisconnected = () => {
     setSessionActive(false);
+    setToken('');   // reset so history panel reappears
+    setWsUrl('');
   };
 
   const speedLabel =
@@ -328,33 +330,22 @@ function App() {
           )}
         </div>
 
-        {token === "" && user && (() => {
-            const selectedScenario = scenarios.find(s => s.firestoreId === selectedFsId);
-            const historyScenarioId = selectedScenario
-              ? (selectedScenario.isDefault
-                ? { 'default-1': '1', 'default-2': '2', 'default-3': '3', 'default-4': '4' }[selectedScenario.firestoreId] || 'custom'
-                : 'custom')
-              : '1';
-            const historyLabel = selectedScenario?.title || `Scenario ${historyScenarioId}`;
-            return (
-              <div className="glass-panel" style={{ width: "100%", maxWidth: "600px", marginTop: "20px", padding: "2rem" }}>
-                <h3 style={{fontSize: "1.1rem", margin: "0 0 16px 0", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px"}}>
-                  <span style={{ fontSize: '1.4rem' }}>📚</span> 
-                  Past History: {historyLabel}
-                </h3>
-                <SessionHistory 
-                  user={user} 
-                  scenarioId={historyScenarioId} 
-                  onTargetedPracticeClick={(targetScenario) => {
-                    setIsTargetedMode(true);
-                    setTargetedPracticeText(targetScenario);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }} 
-                />
-              </div>
-            );
-          })()
-        }
+        {token === "" && user && (
+          <div className="glass-panel" style={{ width: "100%", maxWidth: "600px", marginTop: "20px", padding: "2rem" }}>
+            <h3 style={{fontSize: "1.1rem", margin: "0 0 16px 0", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px"}}>
+              <span style={{ fontSize: '1.4rem' }}>📚</span> Past Sessions
+            </h3>
+            <SessionHistory 
+              user={user}
+              scenarioId={null}
+              onTargetedPracticeClick={(targetScenario) => {
+                setIsTargetedMode(true);
+                setTargetedPracticeText(targetScenario);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }} 
+            />
+          </div>
+        )}
       </main>
     </>
   );
